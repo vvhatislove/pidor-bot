@@ -6,6 +6,7 @@ import psycopg2
 from postgreSQL import postgreSQL
 from dotenv import load_dotenv
 import const
+import random
 
 def errorMessage(msg, bot):
     bot.send_message(msg.chat.id, "В моем Пидор механизме какой-то сбой⌛. Попробуй еще раз♻")
@@ -150,6 +151,24 @@ def telegramBot(TOKEN):
 
                 else:
                     bot.send_message(message.chat.id, "К сожалению ты не зарегистрирован на участие😔 Зарегистрируйся с помощью команды 👉/reg@pidorochek_bot")
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
+    @bot.message_handler(commands=['pidor'])
+    def pidorMessage(message):
+        try:
+            if message.chat.type == 'private':
+                return wrongChatMessage(message, bot)
+            else:
+                users = psql.getRegUsers(message.chat.id)
+                if bool(len(users)):
+                    pidorIndex = random.randrange(len(users))
+                    pidor = users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]
+                    bot.send_message(message.chat.id, f"Пидорас @{pidor}")
+                    pidorCount = users[pidorIndex][5] + 1
+                    psql.setPidorCount(message.chat.id, users[pidorIndex][1], pidorCount)
+                else:
+                    bot.send_message(message.chat.id, "К сожалению никто не зарегистрирован на участие😔 Зарегистрируйтесь с помощью команды 👉/reg@pidorochek_bot")
         except Exception as e:
             print(e)
             errorMessage(message, bot)

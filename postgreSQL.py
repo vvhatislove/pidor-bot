@@ -33,6 +33,11 @@ class postgreSQL:
                 f"SELECT * FROM users WHERE chatid = {chatId}"
             )
             return self.cursor.fetchall()
+    def setPidorCount(self, chatId, userId, pidorCount):
+        with self.connection:
+            return self.cursor.execute(f"UPDATE users SET pidorCount={pidorCount} WHERE chatId={chatId} AND userId={userId}")
+
+
             
     def createTableUsers(self):
         with self.connection:
