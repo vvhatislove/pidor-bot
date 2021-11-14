@@ -27,7 +27,12 @@ class postgreSQL:
             return self.cursor.execute(
                 f"DELETE FROM users WHERE id={id}"
             )
-
+    def getRegUsers(self, chatId):
+        with self.connection:
+            self.cursor.execute(
+                f"SELECT * FROM users WHERE chatid = {chatId}"
+            )
+            return self.cursor.fetchall()
             
     def createTableUsers(self):
         with self.connection:

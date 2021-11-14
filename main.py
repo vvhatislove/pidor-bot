@@ -61,8 +61,7 @@ def telegramBot(TOKEN):
                 return wrongChatMessage(message, bot)
             else:
                 users = psql.userExists(message.from_user.id,message.chat.id)
-                print (users)
-                if bool(len(users)):
+                if users:
                     bot.send_message(message.chat.id, "Вы уже зарегистрировались🤡")
                 else:
                     userId = int(message.from_user.id)
@@ -82,13 +81,34 @@ def telegramBot(TOKEN):
                 return wrongChatMessage(message, bot)
             else:
                 users = psql.userExists(message.from_user.id, message.chat.id)
-                if bool(len(users)):
+                if users:
                     psql.deleteUser(users[0])
                     bot.send_message(message.chat.id, "Вы отменили регистрацию на участие🙅‍♂️ и проебали всю статистику\nА что поделать, такова жизнь🤷‍♂️")
                 else:
                     bot.send_message(message.chat.id, "Вы и так не зарегистрированы, нечего отменять🤡")
 
                 
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
+    @bot.message_handler(commands=['showreg'])
+    def showregMessage(message):
+        try:
+            if message.chat.type == 'private':
+                return wrongChatMessage(message, bot)
+            else:
+                users = psql.getRegUsers(message.chat.id)
+                if bool(len(users)):
+                    infoMessage = "📋Зарегистрированые участники:\n"
+                    i = 1
+                    for user in users:
+                        infoMessage += f"{i}.👉 {user[3] if user [3] else user[4]}"
+                        i += 1
+                    bot.send_message(message.chat.id, infoMessage)
+                else:
+                    bot.send_message(message.chat.id, "Нет зарегистрированых пользователей🙇‍♂️, чтобы зарегистрироваться напишите 👉/reg@pidorochek_bot")
+
+                   
         except Exception as e:
             print(e)
             errorMessage(message, bot)
