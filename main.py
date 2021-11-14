@@ -7,6 +7,7 @@ from postgreSQL import postgreSQL
 from dotenv import load_dotenv
 import const
 import random
+import time
 
 def errorMessage(msg, bot):
     bot.send_message(msg.chat.id, "В моем Пидор механизме какой-то сбой⌛. Попробуй еще раз♻")
@@ -157,6 +158,12 @@ def telegramBot(TOKEN):
     @bot.message_handler(commands=['pidor'])
     def pidorMessage(message):
         try:
+            # cd = psql.getCooldown(message.chat.id)
+            # if cd:
+            #     if (message.date - cd[2]) >= 100:
+            #         psql.deleteCooldown(cd[0])
+            #     else:
+            #         return bot.send_message(message.chat.id, message.date - cd[2])
             if message.chat.type == 'private':
                 return wrongChatMessage(message, bot)
             else:
@@ -164,9 +171,36 @@ def telegramBot(TOKEN):
                 if bool(len(users)):
                     pidorIndex = random.randrange(len(users))
                     pidor = users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]
-                    bot.send_message(message.chat.id, f"Пидорас @{pidor}")
+                    winPhraseIndex = random.randrange(len(const.winPidorPhrase))
+                    firstPhraseIndex = random.randrange(len(const.pidorText))
+                    secondPhraseIndex = None
+                    while True:
+                        secondPhraseIndex = random.randrange(len(const.pidorText))
+                        if firstPhraseIndex == secondPhraseIndex:
+                            continue
+                        else:
+                            break
+                    time.sleep(1)
+                    bot.send_message(message.chat.id, f"{const.pidorText[firstPhraseIndex]}")
+                    time.sleep(1.5)
+                    bot.send_message(message.chat.id, f"{const.pidorText[secondPhraseIndex]}")
+                    time.sleep(1.5)
+                    bot.send_message(message.chat.id, f"{const.winPidorPhrase[winPhraseIndex]}@{pidor}")
                     pidorCount = users[pidorIndex][5] + 1
+                    # psql.addCooldown(message.chat.id, message.date)
                     psql.setPidorCount(message.chat.id, users[pidorIndex][1], pidorCount)
+                    if pidorCount == 1:
+                        bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                    if pidorCount == 3:
+                        bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                    if pidorCount == 10:
+                        bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                    if pidorCount == 100:
+                        bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                    if pidorCount == 300:
+                        bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                    if pidorCount == 1000:
+                        bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
                 else:
                     bot.send_message(message.chat.id, "К сожалению никто не зарегистрирован на участие😔 Зарегистрируйтесь с помощью команды 👉/reg@pidorochek_bot")
         except Exception as e:
