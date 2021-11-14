@@ -112,7 +112,47 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+    @bot.message_handler(commands=['achivements'])
+    def achievementsMessage(message):
+        try:
+            if message.chat.type == 'private':
+                return wrongChatMessage(message, bot)
+            else:
+                user = psql.userExists(message.from_user.id, message.chat.id)
+                if user:
+                    pidorCount = user[5]
+                    achvMessage = f"🏆Достижения {message.from_user.username if message.from_user.username else message.from_user.first_name} в чате \"{message.chat.title}\":\n\n"
+                    if pidorCount >= 1:
+                        achvMessage += "✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раз\n\n"
+                    else:
+                        achvMessage += f"❌\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раз\n🤖Еще {1 - pidorCount} раз(а)\n\n"
+                    if pidorCount >= 3:
+                        achvMessage += "✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\n"
+                    else:
+                        achvMessage += f"❌\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n🤖Еще {3 - pidorCount} раз(а)\n\n"
+                    if pidorCount >= 10:
+                        achvMessage += "✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\n"
+                    else:
+                        achvMessage += f"❌\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n🤖Еще {10 - pidorCount} раз(а)\n\n"
+                    if pidorCount >= 100:
+                        achvMessage += "✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\n"
+                    else:
+                        achvMessage += f"❌\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100 раз\n🤖Еще {100 - pidorCount} раз(а)\n\n"
+                    if pidorCount >= 300:
+                        achvMessage += "✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\n"
+                    else:
+                        achvMessage += f"❌\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n🤖Еще {300 - pidorCount} раз(а)\n\n"
+                    if pidorCount >= 1000:
+                        achvMessage += "✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\n"
+                    else:
+                        achvMessage += f"❌\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n🤖Еще {1000 - pidorCount} раз(а)\n\n"
+                    bot.send_message(message.chat.id, achvMessage)
 
+                else:
+                    bot.send_message(message.chat.id, "К сожалению ты не зарегистрирован на участие😔 Зарегистрируйся с помощью команды 👉/reg@pidorochek_bot")
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
     bot.infinity_polling()
 
 if __name__ == '__main__':
