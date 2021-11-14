@@ -32,6 +32,7 @@ def telegramBot(TOKEN):
                 bot.send_message(message.chat.id, f"Приветствую обитателей чата {message.chat.title}👋.\n Я Пидор Бот🌈, вот вам краткая инструкция как мною пользоватся🔧\nВсе участники должны написать 👉/reg@pidorochek_bot\n(Чтобы посмотреть список зарегистрированых участников📜 напишите 👉/showreg@pidorochek_bot)\nПосле того как все кто хотели зарегистрировались, прописываете 👉/pidor@pidorochek_bot\nЕсли вы хотите посмотреть другие доступные команды📋 напишите 👉/help@pidorochek_bot\n Да начнется ебля в сраку👉👌")
         except Exception as e:
             print(e)
+            errorMessage(message, bot)
         # userId = int(message.from_user.id)
         # chatId = int(message.chat.id)
         # firstName = str(message.from_user.first_name)
@@ -52,6 +53,45 @@ def telegramBot(TOKEN):
                 bot.send_message(message.chat.id, const.commands)
         except Exception as e:
             print(e)
+            errorMessage(message, bot)
+    @bot.message_handler(commands=['reg'])
+    def regMessage(message):
+        try:
+            if message.chat.type == 'private':
+                return wrongChatMessage(message, bot)
+            else:
+                users = psql.userExists(message.from_user.id,message.chat.id)
+                print (users)
+                if bool(len(users)):
+                    bot.send_message(message.chat.id, "Вы уже зарегистрировались🤡")
+                else:
+                    userId = int(message.from_user.id)
+                    chatId = int(message.chat.id)
+                    firstName = str(message.from_user.first_name)
+                    username = str(message.from_user.username)
+                    date = int(message.date)
+                    psql.addUser(userId,chatId,firstName,username,date);
+                    bot.send_message(message.chat.id, "Вы успешно зарегистрировались🌈")
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
+    @bot.message_handler(commands=['unreg'])
+    def unregMessage(message):
+        try:
+            if message.chat.type == 'private':
+                return wrongChatMessage(message, bot)
+            else:
+                users = psql.userExists(message.from_user.id, message.chat.id)
+                if bool(len(users)):
+                    psql.deleteUser(users[0])
+                    bot.send_message(message.chat.id, "Вы отменили регистрацию на участие🙅‍♂️ и проебали всю статистику\nА что поделать, такова жизнь🤷‍♂️")
+                else:
+                    bot.send_message(message.chat.id, "Вы и так не зарегистрированы, нечего отменять🤡")
+
+                
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
 
     bot.infinity_polling()
 

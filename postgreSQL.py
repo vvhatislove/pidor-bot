@@ -10,12 +10,25 @@ class postgreSQL:
         port=port
         )
         self.cursor = self.connection.cursor()
-    def devTestAddUserInBD(self, userId, chatId, firstName, username, pidorCount, date):
+    def userExists(self, userId, chatId):
+        with self.connection:
+            self.cursor.execute(
+                f"SELECT * FROM users WHERE userid = {userId} AND chatid = {chatId}"
+            )
+            return self.cursor.fetchone()
+
+    def addUser(self, userId, chatId, firstName, username, date):
         with self.connection:
             return self.cursor.execute(
-                f"INSERT INTO users (userid,chatid,first_name,username,pidorCount,date) VALUES ({userId}, {chatId}, '{firstName}', '{username}', {pidorCount}, {date})"
+                f"INSERT INTO users (userid,chatid,first_name,username,pidorCount,date) VALUES ({userId}, {chatId}, '{firstName}', '{username}', 0, {date})"
             )
-    
+    def deleteUser(self, id):
+        with self.connection:
+            return self.cursor.execute(
+                f"DELETE FROM users WHERE id={id}"
+            )
+
+            
     def createTableUsers(self):
         with self.connection:
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS users (
