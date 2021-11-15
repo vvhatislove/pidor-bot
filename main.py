@@ -1,8 +1,7 @@
 import telebot
 import os
 from telebot.types import MessageEntity
-from telebot.util import user_link 
-import psycopg2
+from telebot.util import user_link
 from postgreSQL import postgreSQL
 from dotenv import load_dotenv
 import const
@@ -158,15 +157,29 @@ def telegramBot(TOKEN):
     @bot.message_handler(commands=['pidor'])
     def pidorMessage(message):
         try:
-            # cd = psql.getCooldown(message.chat.id)
-            # if cd:
-            #     if (message.date - cd[2]) >= 100:
-            #         psql.deleteCooldown(cd[0])
-            #     else:
-            #         return bot.send_message(message.chat.id, message.date - cd[2])
+            cd = psql.getCooldown(message.chat.id)
+            if cd:
+                cooldownTime = 86400
+                timeCd = message.date - cd[2]
+                if (timeCd) >= cooldownTime:
+                    psql.deleteCooldown(cd[0])
+                else:
+                    tempTime = round((cooldownTime - timeCd)/3600)
+                    print(tempTime)
+                    if tempTime == 0:
+                        tempTime = round((cooldownTime - timeCd)/60)
+                        print(tempTime)
+                        return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} минут(ы)⏳")
+                    elif tempTime == 21 or tempTime == 1:
+                        return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} час⏳")
+                    elif tempTime == 2 or tempTime == 3 or tempTime == 4 or tempTime == 22 or tempTime == 23:
+                        return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} часa⏳")
+                    else:
+                        return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} часов⏳")
             if message.chat.type == 'private':
                 return wrongChatMessage(message, bot)
             else:
+                psql.addCooldown(message.chat.id, message.date)
                 users = psql.getRegUsers(message.chat.id)
                 if bool(len(users)):
                     pidorIndex = random.randrange(len(users))
@@ -180,7 +193,7 @@ def telegramBot(TOKEN):
                             continue
                         else:
                             break
-                    time.sleep(1)
+                    time.sleep(0.5)
                     bot.send_message(message.chat.id, f"{const.pidorText[firstPhraseIndex]}")
                     time.sleep(1.5)
                     bot.send_message(message.chat.id, f"{const.pidorText[secondPhraseIndex]}")
@@ -206,6 +219,45 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+    @bot.message_handler(commands=['stats'])
+    def statsMessage(message):
+        try:
+            if message.chat.type == 'private':
+                return wrongChatMessage(message, bot)
+            else:
+                users = psql.getRegUsers(message.chat.id)
+                if bool(len(users)):
+                    statsMessage = f"Статистика пидорасов чата \"{message.chat.title}\"👇\n"
+                    users.sort(key=lambda x:x[5],reverse=True)
+                    i = 0
+                    for user in users:
+                        if i == 0:
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if user[4] else user[3].rstrip()} - {user[5]} раз(а)🥇\n"
+                        elif i == 1:
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if user[4] else user[3].rstrip()} - {user[5]} раз(а)🥈\n"
+                        elif i == 2:
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if user[4] else user[3].rstrip()} - {user[5]} раз(а)🥉\n"
+                        else:
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if user[4] else user[3].rstrip()} - {user[5]} раз(а)💩\n"
+                        i += 1
+                    bot.send_message(message.chat.id, statsMessage)
+                else:
+                    bot.send_message(message.chat.id, "Никто не зарегистрирован😭, пидорасов нет🙄\nЧтобы зарегистрироваться напишите 👉/reg@pidorochek_bot🙏")
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
+    @bot.message_handler(content_types=['text'])
+    def triggerMessage(message):
+        try:
+            if not (message.chat.id == message.from_user.id):
+                for trigger in const.triggers:
+                    if trigger in message.text.lower():
+                        tempIndex = random.randrange(len(const.answerTriggers))
+                        bot.reply_to(message, const.answerTriggers[tempIndex])
+                        break
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)    
     bot.infinity_polling()
 
 if __name__ == '__main__':
