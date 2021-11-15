@@ -3,8 +3,8 @@ import os
 from telebot.types import MessageEntity
 from telebot.util import user_link
 from postgreSQL import postgreSQL
-from dotenv import load_dotenv
 import const
+import config
 import random
 import time
 
@@ -14,12 +14,12 @@ def wrongChatMessage(msg, bot):
     bot.send_message(msg.chat.id, "Ты долбаеб👺, в группу меня кинь и там прописывай эту команду☝")
 
 def telegramBot(TOKEN):
-    DATABASE = os.getenv("DATABASE")
-    USER = os.getenv("USER")
-    PASSWORD = os.getenv("PASSWORD")
-    HOST = os.getenv("HOST")
-    PORT = os.getenv("PORT")
-    adminId = int(os.getenv("adminId"))
+    DATABASE = config.DATABASE
+    USER = config.USER
+    PASSWORD = config.PASSWORD
+    HOST = config.HOST
+    PORT = config.PORT
+    adminId = config.adminId
     psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
 
     bot = telebot.TeleBot(TOKEN)
@@ -165,10 +165,8 @@ def telegramBot(TOKEN):
                     psql.deleteCooldown(cd[0])
                 else:
                     tempTime = round((cooldownTime - timeCd)/3600)
-                    print(tempTime)
                     if tempTime == 0:
                         tempTime = round((cooldownTime - timeCd)/60)
-                        print(tempTime)
                         return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} минут(ы)⏳")
                     elif tempTime == 21 or tempTime == 1:
                         return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} час⏳")
@@ -261,6 +259,5 @@ def telegramBot(TOKEN):
     bot.infinity_polling()
 
 if __name__ == '__main__':
-    load_dotenv()
-    TOKEN = os.getenv("TOKEN")
+    TOKEN = config.TOKEN
     telegramBot(TOKEN)
