@@ -113,7 +113,7 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
-    @bot.message_handler(commands=['achivements'])
+    @bot.message_handler(commands=['achievements'])
     def achievementsMessage(message):
         try:
             if message.chat.type == 'private':
