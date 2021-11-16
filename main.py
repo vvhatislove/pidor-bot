@@ -230,13 +230,13 @@ def telegramBot(TOKEN):
                     i = 0
                     for user in users:
                         if i == 0:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if (user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥇\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥇\n"
                         elif i == 1:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if (user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥈\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥈\n"
                         elif i == 2:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if (user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥉\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥉\n"
                         else:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if (user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)💩\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)💩\n"
                         i += 1
                     bot.send_message(message.chat.id, statsMessage)
                 else:
