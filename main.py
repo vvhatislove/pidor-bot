@@ -230,13 +230,13 @@ def telegramBot(TOKEN):
                     i = 0
                     for user in users:
                         if i == 0:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥇\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥇\n"
                         elif i == 1:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥈\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥈\n"
                         elif i == 2:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥉\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥉\n"
                         else:
-                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4] == 'None') else user[3].rstrip()} - {user[5]} раз(а)💩\n"
+                            statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)💩\n"
                         i += 1
                     bot.send_message(message.chat.id, statsMessage)
                 else:
@@ -244,6 +244,11 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+    # @bot.message_handler(commands=['dev'])
+    # def dev(message):
+    #     test = psql.userExists(266460350, -1001414157209)
+    #     print(test[4].rstrip() if not(test[4].rstrip() == 'None') else test[3].rstrip())
+        
     @bot.message_handler(content_types=['text'])
     def triggerMessage(message):
         try:
@@ -255,7 +260,7 @@ def telegramBot(TOKEN):
                         break
         except Exception as e:
             print(e)
-            errorMessage(message, bot)    
+            errorMessage(message, bot)
     bot.infinity_polling()
 
 if __name__ == '__main__':
