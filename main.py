@@ -256,7 +256,14 @@ def telegramBot(TOKEN):
     # def dev(message):
     #     test = psql.userExists(266460350, -1001414157209)
     #     print(test[4].rstrip() if not(test[4].rstrip() == 'None') else test[3].rstrip())
-        
+    @bot.message_handler(commands=['changecooldowntime'])
+    def changecooldowntime(message):
+        try:
+            if message.from_user.id == adminId:
+                commandtext = message.text[20:]
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
     @bot.message_handler(content_types=['text'])
     def triggerMessage(message):
         try:
