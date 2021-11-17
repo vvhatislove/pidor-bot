@@ -159,7 +159,7 @@ def telegramBot(TOKEN):
         try:
             cd = psql.getCooldown(message.chat.id)
             if cd:
-                cooldownTime = 86400
+                cooldownTime = psql.getCooldownTime()[1]
                 timeCd = message.date - cd[2]
                 if (timeCd) >= cooldownTime:
                     psql.deleteCooldown(cd[0])
@@ -256,7 +256,30 @@ def telegramBot(TOKEN):
     # def dev(message):
     #     test = psql.userExists(266460350, -1001414157209)
     #     print(test[4].rstrip() if not(test[4].rstrip() == 'None') else test[3].rstrip())
-        
+    
+
+
+    # нужно сделать удаление чата если к нему нет доступа
+    @bot.message_handler(commands=['changecooldowntime'])
+    def changecooldowntime(message):
+        try:
+            if message.from_user.id == adminId:
+                newCdTime = message.text[20:]
+                try:
+                    int(newCdTime)
+                except Exception:
+                    return bot.send_message(message.chat.id, "Чето ты не правильно ввел, перепроверь написание команды!\nДолжно быть так /changecooldowntime <секунды>")
+                psql.setCooldownTime(newCdTime)
+                bot.send_message(message.chat.id, f"Кд успешно изменен на {newCdTime}c")
+                chatIds = psql.getAllChatId()
+                for ids in chatIds:
+                    try:
+                        bot.send_message(ids[0], f"⌛️Кулдаун на определение пидораса был изменен\n\n🆕Теперь {newCdTime}c")
+                    except Exception:
+                        bot.send_message(message.chat.id, f"❌Нет доступа к чату id: {ids[0]}")
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
     @bot.message_handler(content_types=['text'])
     def triggerMessage(message):
         try:
