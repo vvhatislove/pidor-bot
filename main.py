@@ -47,7 +47,7 @@ def telegramBot(TOKEN):
     def helpMessage(message):
         try:
             if message.from_user.id == adminId and message.chat.id == adminId:
-                bot.send_message(message.chat.id, f"Команды для простых смертных:\n{const.privateCommands}\nМои команды:\n")
+                bot.send_message(message.chat.id, f"Команды для простых смертных:\n{const.privateCommands}\nМои команды:\n{const.adminCommands}")
             elif message.chat.id == message.from_user.id:
                 bot.send_message(message.chat.id, const.privateCommands)
             else:
