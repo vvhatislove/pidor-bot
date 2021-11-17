@@ -35,8 +35,15 @@ class postgreSQL:
             return self.cursor.fetchall()
     def setPidorCount(self, chatId, userId, pidorCount):
         with self.connection:
-            return self.cursor.execute(f"UPDATE users SET pidorCount={pidorCount} WHERE chatId={chatId} AND userId={userId}")
+            return self.cursor.execute(
+                f"UPDATE users SET pidorCount={pidorCount} WHERE chatId={chatId} AND userId={userId}"
+                )
 
+    def updateData(self, userId, newUsername, newFirstname):
+        with self.connection:
+            return self.cursor.execute(
+                f"UPDATE users SET first_name='{newFirstname}', username='{newUsername}' WHERE userId={userId}"
+            )
     def addCooldown(self, chatId, date):
         with self.connection:
             return self.cursor.execute(

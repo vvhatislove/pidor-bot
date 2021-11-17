@@ -169,7 +169,7 @@ def telegramBot(TOKEN):
                         tempTime = round((cooldownTime - timeCd)/60)
                         return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} минут(ы)⏳")
                     elif tempTime == 21 or tempTime == 1:
-                        return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} час⏳")
+                        return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 остался {tempTime} час⏳")
                     elif tempTime == 2 or tempTime == 3 or tempTime == 4 or tempTime == 22 or tempTime == 23:
                         return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} часa⏳")
                     else:
@@ -241,6 +241,17 @@ def telegramBot(TOKEN):
                     bot.send_message(message.chat.id, statsMessage)
                 else:
                     bot.send_message(message.chat.id, "Никто не зарегистрирован😭, пидорасов нет🙄\nЧтобы зарегистрироваться напишите 👉/reg@pidorochek_bot🙏")
+        except Exception as e:
+            print(e)
+            errorMessage(message, bot)
+    @bot.message_handler(commands=['updatedata'])
+    def updatedataMessage(message):
+        try:
+            if message.chat.type == 'private':
+                return wrongChatMessage(message, bot)
+            else:
+                psql.updateData(message.from_user.id, str(message.from_user.username), str(message.from_user.first_name));
+                bot.reply_to(message, f"Твои данные перезаписаны в ПидорБазу!📃\n👉Имя: {message.from_user.first_name}\n👉Никнейм: {message.from_user.username}")
         except Exception as e:
             print(e)
             errorMessage(message, bot)
