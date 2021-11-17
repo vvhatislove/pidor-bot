@@ -247,11 +247,8 @@ def telegramBot(TOKEN):
     @bot.message_handler(commands=['updatedata'])
     def updatedataMessage(message):
         try:
-            if message.chat.type == 'private':
-                return wrongChatMessage(message, bot)
-            else:
-                psql.updateData(message.from_user.id, str(message.from_user.username), str(message.from_user.first_name));
-                bot.reply_to(message, f"Твои данные перезаписаны в ПидорБазу!📃\n👉Имя: {message.from_user.first_name}\n👉Никнейм: {message.from_user.username}")
+            psql.updateData(message.from_user.id, str(message.from_user.username), str(message.from_user.first_name));
+            bot.reply_to(message, f"Твои данные перезаписаны в ПидорБазу!📃\n👉Имя: {message.from_user.first_name}\n👉Никнейм: {message.from_user.username}")
         except Exception as e:
             print(e)
             errorMessage(message, bot)
