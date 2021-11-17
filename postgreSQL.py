@@ -44,6 +44,12 @@ class postgreSQL:
             return self.cursor.execute(
                 f"UPDATE users SET first_name='{newFirstname}', username='{newUsername}' WHERE userId={userId}"
             )
+    def getAllChatId(self):
+        with self.connection:
+            self.cursor.execute(
+                "SELECT DISTINCT chatid FROM users ORDER BY chatid"
+            )
+            return self.cursor.fetchall()
     def addCooldown(self, chatId, date):
         with self.connection:
             return self.cursor.execute(
@@ -60,7 +66,17 @@ class postgreSQL:
             return self.cursor.execute(
                 f"DELETE FROM cooldown WHERE id={id}"
             )
-
+    def getCooldownTime(self):
+        with self.connection:
+            self.cursor.execute(
+                "SELECT * FROM cooldown_time WHERE id=1"
+            )
+            return self.cursor.fetchone()
+    def setCooldownTime(self, newCdTime):
+        with self.connection:
+            self.cursor.execute(
+                f"UPDATE cooldown_time SET cd_time={newCdTime} WHERE id=1"
+            )
     def createTableCooldown(self):
         with self.connection:
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS cooldown (
