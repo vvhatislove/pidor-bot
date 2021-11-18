@@ -99,3 +99,4 @@ class postgreSQL:
 
     def close(self):
         self.connection.close()
+        print("хуй")

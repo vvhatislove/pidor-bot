@@ -1,10 +1,10 @@
+
 import telebot
-import os
 from telebot.types import MessageEntity
 from telebot.util import user_link
 from postgreSQL import postgreSQL
 import const
-import config
+from config import TOKEN, DATABASE, USER, PASSWORD, HOST, PORT, adminId
 import random
 import time
 
@@ -14,13 +14,6 @@ def wrongChatMessage(msg, bot):
     bot.send_message(msg.chat.id, "Ты долбаеб👺, в группу меня кинь и там прописывай эту команду☝")
 
 def telegramBot(TOKEN):
-    DATABASE = config.DATABASE
-    USER = config.USER
-    PASSWORD = config.PASSWORD
-    HOST = config.HOST
-    PORT = config.PORT
-    adminId = config.adminId
-    psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
 
     bot = telebot.TeleBot(TOKEN)
 
@@ -61,6 +54,7 @@ def telegramBot(TOKEN):
             if message.chat.type == 'private':
                 return wrongChatMessage(message, bot)
             else:
+                psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
                 users = psql.userExists(message.from_user.id,message.chat.id)
                 if users:
                     bot.send_message(message.chat.id, "Вы уже зарегистрировались🤡")
@@ -75,29 +69,34 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     @bot.message_handler(commands=['unreg'])
     def unregMessage(message):
         try:
             if message.chat.type == 'private':
                 return wrongChatMessage(message, bot)
             else:
+                psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
                 users = psql.userExists(message.from_user.id, message.chat.id)
                 if users:
                     psql.deleteUser(users[0])
                     bot.send_message(message.chat.id, "Вы отменили регистрацию на участие🙅‍♂️ и проебали всю статистику\nА что поделать, такова жизнь🤷‍♂️")
                 else:
                     bot.send_message(message.chat.id, "Вы и так не зарегистрированы, нечего отменять🤡")
-
                 
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     @bot.message_handler(commands=['showreg'])
     def showregMessage(message):
         try:
             if message.chat.type == 'private':
                 return wrongChatMessage(message, bot)
             else:
+                psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
                 users = psql.getRegUsers(message.chat.id)
                 if bool(len(users)):
                     infoMessage = "📋Зарегистрированые участники:\n"
@@ -107,18 +106,19 @@ def telegramBot(TOKEN):
                         i += 1
                     bot.send_message(message.chat.id, infoMessage)
                 else:
-                    bot.send_message(message.chat.id, "Нет зарегистрированых пользователей🙇‍♂️, чтобы зарегистрироваться напишите 👉/reg@pidorochek_bot")
-
-                   
+                    bot.send_message(message.chat.id, "Нет зарегистрированых пользователей🙇‍♂️, чтобы зарегистрироваться напишите 👉/reg@pidorochek_bot")       
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     @bot.message_handler(commands=['achievements'])
     def achievementsMessage(message):
         try:
             if message.chat.type == 'private':
                 return wrongChatMessage(message, bot)
             else:
+                psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
                 user = psql.userExists(message.from_user.id, message.chat.id)
                 if user:
                     pidorCount = user[5]
@@ -148,15 +148,17 @@ def telegramBot(TOKEN):
                     else:
                         achvMessage += f"❌\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n🤖Еще {1000 - pidorCount} раз(а)\n\n"
                     bot.send_message(message.chat.id, achvMessage)
-
                 else:
                     bot.send_message(message.chat.id, "К сожалению ты не зарегистрирован на участие😔 Зарегистрируйся с помощью команды 👉/reg@pidorochek_bot")
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     @bot.message_handler(commands=['pidor'])
     def pidorMessage(message):
         try:
+            psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
             cd = psql.getCooldown(message.chat.id)
             if cd:
                 cooldownTime = psql.getCooldownTime()[1]
@@ -217,12 +219,15 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     @bot.message_handler(commands=['stats'])
     def statsMessage(message):
         try:
             if message.chat.type == 'private':
                 return wrongChatMessage(message, bot)
             else:
+                psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
                 users = psql.getRegUsers(message.chat.id)
                 if bool(len(users)):
                     statsMessage = f"Статистика пидорасов чата \"{message.chat.title}\"👇\n"
@@ -244,14 +249,19 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     @bot.message_handler(commands=['updatedata'])
     def updatedataMessage(message):
         try:
+            psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
             psql.updateData(message.from_user.id, str(message.from_user.username), str(message.from_user.first_name));
             bot.reply_to(message, f"Твои данные перезаписаны в ПидорБазу!📃\n👉Имя: {message.from_user.first_name}\n👉Никнейм: {message.from_user.username}")
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     # @bot.message_handler(commands=['dev'])
     # def dev(message):
     #     test = psql.userExists(266460350, -1001414157209)
@@ -269,6 +279,7 @@ def telegramBot(TOKEN):
                     int(newCdTime)
                 except Exception:
                     return bot.send_message(message.chat.id, "Чето ты не правильно ввел, перепроверь написание команды!\nДолжно быть так /changecooldowntime <секунды>")
+                psql = postgreSQL(DATABASE, USER,PASSWORD, HOST, PORT)
                 psql.setCooldownTime(newCdTime)
                 bot.send_message(message.chat.id, f"Кд успешно изменен на {newCdTime}c")
                 chatIds = psql.getAllChatId()
@@ -280,6 +291,8 @@ def telegramBot(TOKEN):
         except Exception as e:
             print(e)
             errorMessage(message, bot)
+        finally:
+            psql.close()
     @bot.message_handler(content_types=['text'])
     def triggerMessage(message):
         try:
@@ -295,5 +308,4 @@ def telegramBot(TOKEN):
     bot.infinity_polling()
 
 if __name__ == '__main__':
-    TOKEN = config.TOKEN
     telegramBot(TOKEN)
