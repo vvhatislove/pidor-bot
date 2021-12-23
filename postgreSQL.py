@@ -1,15 +1,17 @@
 import psycopg2
 
-class postgreSQL:
+
+class PostgreSQL:
     def __init__(self, database, user, password, host, port):
         self.connection = psycopg2.connect(
-        database=database, 
-        user=user, 
-        password=password, 
-        host=host,   
-        port=port
+            database=database,
+            user=user,
+            password=password,
+            host=host,
+            port=port
         )
         self.cursor = self.connection.cursor()
+
     def userExists(self, userId, chatId):
         with self.connection:
             self.cursor.execute(
@@ -22,61 +24,71 @@ class postgreSQL:
             return self.cursor.execute(
                 f"INSERT INTO users (userid,chatid,first_name,username,pidorCount,date) VALUES ({userId}, {chatId}, '{firstName}', '{username}', 0, {date})"
             )
+
     def deleteUser(self, id):
         with self.connection:
             return self.cursor.execute(
                 f"DELETE FROM users WHERE id={id}"
             )
+
     def getRegUsers(self, chatId):
         with self.connection:
             self.cursor.execute(
                 f"SELECT * FROM users WHERE chatid = {chatId}"
             )
             return self.cursor.fetchall()
+
     def setPidorCount(self, chatId, userId, pidorCount):
         with self.connection:
             return self.cursor.execute(
                 f"UPDATE users SET pidorCount={pidorCount} WHERE chatId={chatId} AND userId={userId}"
-                )
+            )
 
     def updateData(self, userId, newUsername, newFirstname):
         with self.connection:
             return self.cursor.execute(
                 f"UPDATE users SET first_name='{newFirstname}', username='{newUsername}' WHERE userId={userId}"
             )
+
     def getAllChatId(self):
         with self.connection:
             self.cursor.execute(
                 "SELECT DISTINCT chatid FROM users ORDER BY chatid"
             )
             return self.cursor.fetchall()
+
     def addCooldown(self, chatId, date):
         with self.connection:
             return self.cursor.execute(
                 f"INSERT INTO cooldown (chatid,date) VALUES ({chatId}, {date})"
             )
+
     def getCooldown(self, chatId):
         with self.connection:
             self.cursor.execute(
                 f"SELECT * FROM cooldown WHERE chatid = {chatId}"
             )
             return self.cursor.fetchone()
+
     def deleteCooldown(self, id):
         with self.connection:
             return self.cursor.execute(
                 f"DELETE FROM cooldown WHERE id={id}"
             )
+
     def getCooldownTime(self):
         with self.connection:
             self.cursor.execute(
                 "SELECT * FROM cooldown_time WHERE id=1"
             )
             return self.cursor.fetchone()
+
     def setCooldownTime(self, newCdTime):
         with self.connection:
             self.cursor.execute(
                 f"UPDATE cooldown_time SET cd_time={newCdTime} WHERE id=1"
             )
+
     def createTableCooldown(self):
         with self.connection:
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS cooldown (
@@ -84,7 +96,7 @@ class postgreSQL:
             chatid BIGINT NOT NULL,
             date BIGINT NOT NULL
             );''')
-            
+
     def createTableUsers(self):
         with self.connection:
             self.cursor.execute('''CREATE TABLE IF NOT EXISTS users (
