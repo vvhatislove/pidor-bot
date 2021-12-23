@@ -9,7 +9,7 @@ DATABASE = os.environ.get('DATABASE')
 USER = os.environ.get('USERNAMEDB')
 PASSWORD = os.environ.get('PASSWORD')
 HOST = os.environ.get('HOST')
-PORT = int(os.environ.get('PORT'))
+PORT = int(os.environ.get('PORTFORDB'))
 adminId = int(os.environ.get('adminId'))
 
 def errorMessage(msg, bot):
