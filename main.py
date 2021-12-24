@@ -12,17 +12,17 @@ HOST = os.environ.get('HOST')
 PORT = 5432
 adminId = int(os.environ.get('adminId'))
 
-def errorMessage(msg, bot):
+def error_message(msg, bot):
     bot.send_message(msg.chat.id, "В моем Пидор механизме какой-то сбой⌛. Попробуй еще раз♻")
-def wrongChatMessage(msg, bot):
+def wrong_chat_message(msg, bot):
     bot.send_message(msg.chat.id, "Ты долбаеб👺, в группу меня кинь и там прописывай эту команду☝")
 
-def telegramBot(token):
+def telegram_bot(token):
 
     bot = telebot.TeleBot(token)
 
     @bot.message_handler(commands=['start'])
-    def startMessage(message):
+    def start_message(message):
         try: 
             if message.chat.type == 'private':
                 bot.send_message(message.chat.id, f"Приветствую {message.from_user.first_name if message.from_user.first_name else message.from_user.username}👋. Я Пидор Бот🌈, чтобы воспользоваться мною, добавь меня в чат к своим друзьям или коллегам💪, и пропиши там 👉/start@pidorochek_bot")
@@ -30,80 +30,80 @@ def telegramBot(token):
                 bot.send_message(message.chat.id, f"Приветствую обитателей чата {message.chat.title}👋.\n Я Пидор Бот🌈, вот вам краткая инструкция как мною пользоватся🔧\nВсе участники должны написать 👉/reg@pidorochek_bot\n(Чтобы посмотреть список зарегистрированых участников📜 напишите 👉/showreg@pidorochek_bot)\nПосле того как все кто хотели зарегистрировались, прописываете 👉/pidor@pidorochek_bot\nЕсли вы хотите посмотреть другие доступные команды📋 напишите 👉/help@pidorochek_bot\n Да начнется ебля в сраку👉👌")
         except Exception as e:
             print(e)
-            errorMessage(message, bot)
+            error_message(message, bot)
 
     @bot.message_handler(commands=['help'])
-    def helpMessage(message):
+    def help_message(message):
         try:
             if message.from_user.id == adminId and message.chat.id == adminId:
-                bot.send_message(message.chat.id, f"Команды для простых смертных:\n{const.privateCommands}\nМои команды:\n{const.adminCommands}")
+                bot.send_message(message.chat.id, f"Команды для простых смертных:\n{const.private_commands}\nМои команды:\n{const.admin_commands}")
             elif message.chat.id == message.from_user.id:
-                bot.send_message(message.chat.id, const.privateCommands)
+                bot.send_message(message.chat.id, const.private_commands)
             else:
                 bot.send_message(message.chat.id, const.commands)
         except Exception as e:
             print(e)
-            errorMessage(message, bot)
+            error_message(message, bot)
     @bot.message_handler(commands=['reg'])
-    def regMessage(message):
+    def reg_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
                 if message.chat.type == 'private':
-                    return wrongChatMessage(message, bot)
+                    return wrong_chat_message(message, bot)
                 else:
-                    users = psql.userExists(message.from_user.id, message.chat.id)
+                    users = psql.user_exists(message.from_user.id, message.chat.id)
                     if users:
                         bot.send_message(message.chat.id, "Вы уже зарегистрировались🤡")
                     else:
-                        userId = int(message.from_user.id)
-                        chatId = int(message.chat.id)
-                        firstName = str(message.from_user.first_name)
+                        user_id = int(message.from_user.id)
+                        chat_id = int(message.chat.id)
+                        first_name = str(message.from_user.first_name)
                         username = str(message.from_user.username)
                         date = int(message.date)
-                        psql.addUser(userId, chatId, firstName, username, date)
+                        psql.add_user(user_id, chat_id, first_name, username, date)
                         bot.send_message(message.chat.id, "Вы успешно зарегистрировались🌈")
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
     @bot.message_handler(commands=['unreg'])
-    def unregMessage(message):
+    def unreg_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
                 if message.chat.type == 'private':
-                    return wrongChatMessage(message, bot)
+                    return wrong_chat_message(message, bot)
                 else:
-                    users = psql.userExists(message.from_user.id, message.chat.id)
+                    users = psql.user_exists(message.from_user.id, message.chat.id)
                     if users:
-                        psql.deleteUser(users[0])
+                        psql.delete_user(users[0])
                         bot.send_message(message.chat.id, "Вы отменили регистрацию на участие🙅‍♂️ и проебали всю статистику\nА что поделать, такова жизнь🤷‍♂️")
                     else:
                         bot.send_message(message.chat.id, "Вы и так не зарегистрированы, нечего отменять🤡")
 
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
 
     @bot.message_handler(commands=['showreg'])
-    def showregMessage(message):
+    def show_reg_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
                 if message.chat.type == 'private':
-                    return wrongChatMessage(message, bot)
+                    return wrong_chat_message(message, bot)
                 else:
-                    users = psql.getRegUsers(message.chat.id)
+                    users = psql.get_reg_users(message.chat.id)
                     if bool(len(users)):
                         infoMessage = "📋Зарегистрированые участники:\n"
                         i = 1
@@ -115,226 +115,225 @@ def telegramBot(token):
                         bot.send_message(message.chat.id, "Нет зарегистрированых пользователей🙇‍♂️, чтобы зарегистрироваться напишите 👉/reg@pidorochek_bot")
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
     @bot.message_handler(commands=['achievements'])
-    def achievementsMessage(message):
+    def achievements_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
                 if message.chat.type == 'private':
-                    return wrongChatMessage(message, bot)
+                    return wrong_chat_message(message, bot)
                 else:
-                    user = psql.userExists(message.from_user.id, message.chat.id)
+                    user = psql.user_exists(message.from_user.id, message.chat.id)
                     if user:
-                        pidorCount = user[5]
-                        achvMessage = f"🏆Достижения {message.from_user.username if message.from_user.username else message.from_user.first_name} в чате \"{message.chat.title}\":\n\n"
-                        if pidorCount >= 1:
-                            achvMessage += "✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раз\n\n"
+                        pidor_count = user[5]
+                        achv_message = f"🏆Достижения {message.from_user.username if message.from_user.username else message.from_user.first_name} в чате \"{message.chat.title}\":\n\n"
+                        if pidor_count >= 1:
+                            achv_message += "✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раз\n\n"
                         else:
-                            achvMessage += f"❌\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раз\n🤖Еще {1 - pidorCount} раз(а)\n\n"
-                        if pidorCount >= 3:
-                            achvMessage += "✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\n"
+                            achv_message += f"❌\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раз\n🤖Еще {1 - pidor_count} раз(а)\n\n"
+                        if pidor_count >= 3:
+                            achv_message += "✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\n"
                         else:
-                            achvMessage += f"❌\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n🤖Еще {3 - pidorCount} раз(а)\n\n"
-                        if pidorCount >= 10:
-                            achvMessage += "✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\n"
+                            achv_message += f"❌\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n🤖Еще {3 - pidor_count} раз(а)\n\n"
+                        if pidor_count >= 10:
+                            achv_message += "✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\n"
                         else:
-                            achvMessage += f"❌\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n🤖Еще {10 - pidorCount} раз(а)\n\n"
-                        if pidorCount >= 100:
-                            achvMessage += "✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\n"
+                            achv_message += f"❌\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n🤖Еще {10 - pidor_count} раз(а)\n\n"
+                        if pidor_count >= 100:
+                            achv_message += "✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\n"
                         else:
-                            achvMessage += f"❌\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100 раз\n🤖Еще {100 - pidorCount} раз(а)\n\n"
-                        if pidorCount >= 300:
-                            achvMessage += "✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\n"
+                            achv_message += f"❌\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100 раз\n🤖Еще {100 - pidor_count} раз(а)\n\n"
+                        if pidor_count >= 300:
+                            achv_message += "✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\n"
                         else:
-                            achvMessage += f"❌\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n🤖Еще {300 - pidorCount} раз(а)\n\n"
-                        if pidorCount >= 1000:
-                            achvMessage += "✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\n"
+                            achv_message += f"❌\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n🤖Еще {300 - pidor_count} раз(а)\n\n"
+                        if pidor_count >= 1000:
+                            achv_message += "✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\n"
                         else:
-                            achvMessage += f"❌\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n🤖Еще {1000 - pidorCount} раз(а)\n\n"
-                        bot.send_message(message.chat.id, achvMessage)
+                            achv_message += f"❌\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n🤖Еще {1000 - pidor_count} раз(а)\n\n"
+                        bot.send_message(message.chat.id, achv_message)
                     else:
                         bot.send_message(message.chat.id, "К сожалению ты не зарегистрирован на участие😔 Зарегистрируйся с помощью команды 👉/reg@pidorochek_bot")
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
     @bot.message_handler(commands=['pidor'])
-    def pidorMessage(message):
+    def pidor_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
-                cd = psql.getCooldown(message.chat.id)
+                cd = psql.get_cooldown(message.chat.id)
                 if cd:
-                    cooldownTime = psql.getCooldownTime()[1]
-                    timeCd = message.date - cd[2]
-                    if timeCd >= cooldownTime:
-                        psql.deleteCooldown(cd[0])
+                    cooldown_time = psql.get_cooldown_time()[1]
+                    time_cd = message.date - cd[2]
+                    if time_cd >= cooldown_time:
+                        psql.delete_cooldown(cd[0])
                     else:
-                        tempTime = round((cooldownTime - timeCd)/3600)
-                        if tempTime == 0:
-                            tempTime = round((cooldownTime - timeCd)/60)
-                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} минут(ы)⏳")
-                        elif tempTime == 21 or tempTime == 1:
-                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 остался {tempTime} час⏳")
-                        elif tempTime == 2 or tempTime == 3 or tempTime == 4 or tempTime == 22 or tempTime == 23:
-                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} часa⏳")
+                        temp_time = round((cooldown_time - time_cd)/3600)
+                        if temp_time == 0:
+                            temp_time = round((cooldown_time - time_cd)/60)
+                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {temp_time} минут(ы)⏳")
+                        elif temp_time == 21 or temp_time == 1:
+                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 остался {temp_time} час⏳")
+                        elif temp_time == 2 or temp_time == 3 or temp_time == 4 or temp_time == 22 or temp_time == 23:
+                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {temp_time} часa⏳")
                         else:
-                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {tempTime} часов⏳")
+                            return bot.send_message(message.chat.id, f"До следующего определения пидора🌈 осталось {temp_time} часов⏳")
                 if message.chat.type == 'private':
-                    return wrongChatMessage(message, bot)
+                    return wrong_chat_message(message, bot)
                 else:
-                    psql.addCooldown(message.chat.id, message.date)
-                    users = psql.getRegUsers(message.chat.id)
+                    psql.add_cooldown(message.chat.id, message.date)
+                    users = psql.get_reg_users(message.chat.id)
                     if bool(len(users)):
-                        pidorIndex = random.randrange(len(users))
-                        pidor = users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]
-                        winPhraseIndex = random.randrange(len(const.winPidorPhrase))
-                        firstPhraseIndex = random.randrange(len(const.pidorText))
+                        pidor_index = random.randrange(len(users))
+                        pidor = users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]
+                        win_phrase_index = random.randrange(len(const.win_pidor_phrase))
+                        first_phrase_index = random.randrange(len(const.pidor_text))
                         while True:
-                            secondPhraseIndex = random.randrange(len(const.pidorText))
-                            if firstPhraseIndex == secondPhraseIndex:
+                            second_phrase_index = random.randrange(len(const.pidor_text))
+                            if first_phrase_index == second_phrase_index:
                                 continue
                             else:
                                 break
                         time.sleep(0.5)
-                        bot.send_message(message.chat.id, f"{const.pidorText[firstPhraseIndex]}")
+                        bot.send_message(message.chat.id, f"{const.pidor_text[first_phrase_index]}")
                         time.sleep(1.5)
-                        bot.send_message(message.chat.id, f"{const.pidorText[secondPhraseIndex]}")
+                        bot.send_message(message.chat.id, f"{const.pidor_text[second_phrase_index]}")
                         time.sleep(1.5)
-                        bot.send_message(message.chat.id, f"{const.winPidorPhrase[winPhraseIndex]}@{pidor}")
-                        pidorCount = users[pidorIndex][5] + 1
-                        # psql.addCooldown(message.chat.id, message.date)
-                        psql.setPidorCount(message.chat.id, users[pidorIndex][1], pidorCount)
-                        if pidorCount == 1:
-                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidorCount == 3:
-                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidorCount == 10:
-                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidorCount == 100:
-                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidorCount == 300:
-                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidorCount == 1000:
-                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidorIndex][4] if users[pidorIndex][4] else users[pidorIndex][3]}\nTы открыл(a) достижение!!!\n\n✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                        bot.send_message(message.chat.id, f"{const.win_pidor_phrase[win_phrase_index]}@{pidor}")
+                        pidor_count = users[pidor_index][5] + 1
+                        psql.set_pidor_count(message.chat.id, users[pidor_index][1], pidor_count)
+                        if pidor_count == 1:
+                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                        if pidor_count == 3:
+                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                        if pidor_count == 10:
+                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                        if pidor_count == 100:
+                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                        if pidor_count == 300:
+                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                        if pidor_count == 1000:
+                            bot.send_message(message.chat.id, f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
                     else:
                         bot.send_message(message.chat.id, "К сожалению никто не зарегистрирован на участие😔 Зарегистрируйтесь с помощью команды 👉/reg@pidorochek_bot")
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
     @bot.message_handler(commands=['stats'])
     def stats_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
                 if message.chat.type == 'private':
-                    return wrongChatMessage(message, bot)
+                    return wrong_chat_message(message, bot)
                 else:
-                    users = psql.getRegUsers(message.chat.id)
+                    users = psql.get_reg_users(message.chat.id)
                     if bool(len(users)):
-                        statsMessage = f"Статистика пидорасов чата \"{message.chat.title}\"👇\n"
+                        stats_message_text = f"Статистика пидорасов чата \"{message.chat.title}\"👇\n"
                         users.sort(key=lambda x: x[5], reverse=True)
                         i = 0
                         for user in users:
                             if i == 0:
-                                statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥇\n"
+                                stats_message_text += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥇\n"
                             elif i == 1:
-                                statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥈\n"
+                                stats_message_text += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥈\n"
                             elif i == 2:
-                                statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥉\n"
+                                stats_message_text += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)🥉\n"
                             else:
-                                statsMessage += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)💩\n"
+                                stats_message_text += f"👨‍❤️‍💋‍👨 {user[4].rstrip() if not(user[4].rstrip() == 'None') else user[3].rstrip()} - {user[5]} раз(а)💩\n"
                             i += 1
-                        bot.send_message(message.chat.id, statsMessage)
+                        bot.send_message(message.chat.id, stats_message_text)
                     else:
                         bot.send_message(message.chat.id, "Никто не зарегистрирован😭, пидорасов нет🙄\nЧтобы зарегистрироваться напишите 👉/reg@pidorochek_bot🙏")
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
     @bot.message_handler(commands=['updatedata'])
-    def updatedataMessage(message):
+    def update_data_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
-                psql.updateData(message.from_user.id, str(message.from_user.username), str(message.from_user.first_name))
+                psql.update_data(message.from_user.id, str(message.from_user.username), str(message.from_user.first_name))
                 bot.reply_to(message, f"Твои данные перезаписаны в ПидорБазу!📃\n👉Имя: {message.from_user.first_name}\n👉Никнейм: {message.from_user.username}")
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
     # @bot.message_handler(commands=['dev'])
     # def dev(message):
-    #     test = psql.userExists(266460350, -1001414157209)
+    #     test = psql.user_exists(266460350, -1001414157209)
     #     print(test[4].rstrip() if not(test[4].rstrip() == 'None') else test[3].rstrip())
 
     # нужно сделать удаление чата если к нему нет доступа
     @bot.message_handler(commands=['changecooldowntime'])
-    def changecooldowntime(message):
+    def change_cooldown_time_message(message):
         try:
             psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
             try:
                 if message.from_user.id == adminId:
-                    newCdTime = message.text[20:]
+                    new_cd_time = message.text[20:]
                     try:
-                        int(newCdTime)
+                        int(new_cd_time)
                     except ValueError:
                         return bot.send_message(message.chat.id, "Чето ты не правильно ввел, перепроверь написание команды!\nДолжно быть так /changecooldowntime <секунды>")
-                    psql.setCooldownTime(newCdTime)
-                    bot.send_message(message.chat.id, f"Кд успешно изменен на {newCdTime}c")
-                    chatIds = psql.getAllChatId()
+                    psql.set_cooldown_time(new_cd_time)
+                    bot.send_message(message.chat.id, f"Кд успешно изменен на {new_cd_time}c")
+                    chatIds = psql.get_all_chat_id()
                     for ids in chatIds:
                         try:
-                            bot.send_message(ids[0], f"⌛️Кулдаун на определение пидораса был изменен\n\n🆕Теперь {newCdTime}c")
+                            bot.send_message(ids[0], f"⌛️Кулдаун на определение пидораса был изменен\n\n🆕Теперь {new_cd_time}c")
                         except Exception as ex:
                             # потом можно сделать отловку не найденых чатов
                             print(ex)
                             bot.send_message(message.chat.id, f"❌Нет доступа к чату id: {ids[0]}")
             except Exception as e:
                 print(e)
-                errorMessage(message, bot)
+                error_message(message, bot)
             finally:
                 psql.close()
         except Exception as err:
             print(err)
-            errorMessage(message, bot)
+            error_message(message, bot)
     @bot.message_handler(content_types=['text'])
-    def triggerMessage(message):
+    def trigger_message(message):
         try:
             if not (message.chat.id == message.from_user.id):
                 for trigger in const.triggers:
                     if trigger in message.text.lower():
-                        tempIndex = random.randrange(len(const.answerTriggers))
-                        bot.reply_to(message, const.answerTriggers[tempIndex])
+                        temp_index = random.randrange(len(const.answer_triggers))
+                        bot.reply_to(message, const.answer_triggers[temp_index])
                         break
         except Exception as e:
             print(e)
-            errorMessage(message, bot)
+            error_message(message, bot)
     bot.infinity_polling()
 
 
 if __name__ == '__main__':
-    telegramBot(os.environ.get('TOKEN'))
+    telegram_bot(os.environ.get('TOKEN'))
