@@ -336,6 +336,7 @@ def telegram_bot(token):
                     psql.set_cooldown_time(new_cd_time)
                     bot.send_message(message.chat.id, f"Кд успешно изменен на {new_cd_time}c")
                     chat_ids = psql.get_all_chat_id()
+                    admin_info_message = ''
                     for ids in chat_ids:
                         try:
                             bot.send_message(ids[0],
@@ -343,9 +344,38 @@ def telegram_bot(token):
                         except Exception as ex:
                             # потом можно сделать отловку не найденых чатов
                             print(ex)
-                            bot.send_message(message.chat.id, f"❌Нет доступа к чату id: {ids[0]}")
+                            admin_info_message += f'❌Нет доступа к чату id: {ids[0]}\n'
+                    bot.send_message(message.chat.id, admin_info_message)
             except Exception as e:
                 print(e)
+                error_message(message, bot)
+            finally:
+                psql.close()
+        except Exception as err:
+            print(err)
+            error_message(message, bot)
+
+    @bot.message_handler(commands=['sendglobalmessage'])
+    def send_global_message(message):
+        try:
+            psql = PostgreSQL(DATABASE, USER, PASSWORD, HOST, PORT)
+            try:
+                if message.chat.id == adminId:
+                    global_message = message.text[19:]
+                    if global_message == '':
+                        return bot.send_message(message.chat.id, 'Напиши сообщение!\n/sendglobalmessage <сообщение>')
+                    chat_ids = psql.get_all_chat_id()
+                    admin_info_message = ''
+                    for chat_id in chat_ids:
+                        try:
+                            bot.send_message(chat_id[0], global_message)
+                            bot.send_sticker(chat_ids[0], 'CAACAgIAAxkBAAEDl5thz1gM1Zx9I_QRrgcISpbhxnRGbgACHAEAApmYRhFlRV_nAAEUYQsjBA')
+                        except Exception as e:
+                            print(e)
+                            admin_info_message += f'❌Нет доступа к чату id: {chat_id[0]}\n'
+                    bot.send_message(message.chat.id, admin_info_message)
+            except Exception as ex:
+                print(ex)
                 error_message(message, bot)
             finally:
                 psql.close()
