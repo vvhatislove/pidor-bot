@@ -4,6 +4,8 @@ import const
 import random
 import time
 import os
+import requests
+from bs4 import BeautifulSoup
 
 DATABASE = os.environ.get('DATABASE')
 USER = os.environ.get('USERNAMEDB')
@@ -12,6 +14,22 @@ HOST = os.environ.get('HOST')
 PORT = 5432
 adminId = int(os.environ.get('adminId'))
 
+
+def get_html_damn(name, sex='m'):
+    r = requests.get(f'https://damn.ru/?name={name}&sex={sex}', headers=const.HEADERS)
+    if r.status_code == 200:
+        return r.text
+    else:
+        return 1
+
+
+def get_damn(text):
+    soup = BeautifulSoup(text, "html.parser")
+    damn = soup.find('div', class_='damn')
+    if damn:
+        return damn.text
+    else:
+        return 1
 
 def error_message(msg, bot):
     bot.send_message(msg.chat.id, "В моем Пидор механизме какой-то сбой⌛. Попробуй еще раз♻")
@@ -391,7 +409,20 @@ def telegram_bot(token):
                     if trigger in message.text.lower():
                         temp_index = random.randrange(len(const.answer_triggers))
                         bot.reply_to(message, const.answer_triggers[temp_index])
-                        break
+                        return
+                r = random.randint(1, 100)
+                if r >= 70:
+                    text = get_html_damn(message.from_user.first_name)
+                    if text == 1:
+                        return
+                    else:
+                        damn = get_damn(text)
+                        if damn == 1:
+                            return
+                        else:
+                            bot.reply_to(message, damn)
+                else:
+                    return
         except Exception as e:
             print(e)
             error_message(message, bot)
