@@ -411,7 +411,7 @@ def telegram_bot(token):
                         bot.reply_to(message, const.answer_triggers[temp_index])
                         return
                 r = random.randint(1, 100)
-                if r >= 70:
+                if r >= 92:
                     text = get_html_damn(message.from_user.first_name)
                     if text == 1:
                         return
