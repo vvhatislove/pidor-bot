@@ -6,6 +6,8 @@ import time
 import os
 import requests
 from bs4 import BeautifulSoup
+import asyncio
+
 
 DATABASE = os.environ.get('DATABASE')
 USER = os.environ.get('USERNAMEDB')
@@ -39,8 +41,52 @@ def wrong_chat_message(msg, bot):
     bot.send_message(msg.chat.id, "Ты долбаеб👺, в группу меня кинь и там прописывай эту команду☝")
 
 
-def telegram_bot(token):
-    bot = telebot.TeleBot(token)
+def detecting_pidor(bot, users, psql, chat_id):
+    pidor_index = random.randrange(len(users))
+    pidor = users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]
+    win_phrase_index = random.randrange(len(const.win_pidor_phrase))
+    first_phrase_index = random.randrange(len(const.pidor_text))
+    while True:
+        second_phrase_index = random.randrange(len(const.pidor_text))
+        if first_phrase_index == second_phrase_index:
+            continue
+        else:
+            break
+    time.sleep(0.5)
+    bot.send_message(chat_id, f"{const.pidor_text[first_phrase_index]}")
+    time.sleep(1.5)
+    bot.send_message(chat_id, f"{const.pidor_text[second_phrase_index]}")
+    time.sleep(1.5)
+    bot.send_message(chat_id, f"{const.win_pidor_phrase[win_phrase_index]}@{pidor}")
+    pidor_count = users[pidor_index][5] + 1
+    psql.set_pidor_count(chat_id, users[pidor_index][1], pidor_count)
+    if pidor_count == 1:
+        bot.send_message(chat_id,
+                         f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+    if pidor_count == 3:
+        bot.send_message(chat_id,
+                         f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+    if pidor_count == 10:
+        bot.send_message(chat_id,
+                         f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+    if pidor_count == 100:
+        bot.send_message(chat_id,
+                         f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+    if pidor_count == 300:
+        bot.send_message(chat_id,
+                         f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+    if pidor_count == 1000:
+        bot.send_message(chat_id,
+                         f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+
+
+async def auto_pidor(bot):
+    while True:
+        await bot.send_message(int(os.environ.get('adminId')), 'ffff')
+        time.sleep(2)
+
+
+def telegram_bot(bot):
 
     @bot.message_handler(commands=['start'])
     def start_message(message):
@@ -231,45 +277,9 @@ def telegram_bot(token):
                     psql.add_cooldown(message.chat.id, message.date)
                     users = psql.get_reg_users(message.chat.id)
                     if bool(len(users)):
-                        pidor_index = random.randrange(len(users))
-                        pidor = users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]
-                        win_phrase_index = random.randrange(len(const.win_pidor_phrase))
-                        first_phrase_index = random.randrange(len(const.pidor_text))
-                        while True:
-                            second_phrase_index = random.randrange(len(const.pidor_text))
-                            if first_phrase_index == second_phrase_index:
-                                continue
-                            else:
-                                break
-                        time.sleep(0.5)
-                        bot.send_message(message.chat.id, f"{const.pidor_text[first_phrase_index]}")
-                        time.sleep(1.5)
-                        bot.send_message(message.chat.id, f"{const.pidor_text[second_phrase_index]}")
-                        time.sleep(1.5)
-                        bot.send_message(message.chat.id, f"{const.win_pidor_phrase[win_phrase_index]}@{pidor}")
-                        pidor_count = users[pidor_index][5] + 1
-                        psql.set_pidor_count(message.chat.id, users[pidor_index][1], pidor_count)
-                        if pidor_count == 1:
-                            bot.send_message(message.chat.id,
-                                             f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Твоя первая анальная пробка\"🍍\n✍️Стать пидором 1 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidor_count == 3:
-                            bot.send_message(message.chat.id,
-                                             f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Добро пожаловать в Анал-Лэнд\"🍩\n✍️Стать пидором 3 раза\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidor_count == 10:
-                            bot.send_message(message.chat.id,
-                                             f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Открой в себе Gachi-чакру\"🧘🏿\n✍️Стать пидором 10 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidor_count == 100:
-                            bot.send_message(message.chat.id,
-                                             f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Путь к гейскому мастерству тернист и опасен\"🔥\n✍️Стать пидором 100\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidor_count == 300:
-                            bot.send_message(message.chat.id,
-                                             f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Отсос у тракториста\"🚜\n✍️Стать пидором 300 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
-                        if pidor_count == 1000:
-                            bot.send_message(message.chat.id,
-                                             f"🥳Поздровляю, @{users[pidor_index][4] if users[pidor_index][4] else users[pidor_index][3]}\nTы открыл(a) достижение!!!\n\n✅\"Король пидорской горы\"⛰\n✍️Стать пидором 1000 раз\n\nЧтобы посмотреть все достижения, воспользуйся /achievements@pidorochek_bot")
+                        detecting_pidor(bot, users, psql, message.chat.id)
                     else:
-                        bot.send_message(message.chat.id,
-                                         "К сожалению никто не зарегистрирован на участие😔 Зарегистрируйтесь с помощью команды 👉/reg@pidorochek_bot")
+                        bot.send_message(message.chat.id, "К сожалению никто не зарегистрирован на участие😔 Зарегистрируйтесь с помощью команды 👉/reg@pidorochek_bot")
             except Exception as e:
                 print(e)
                 error_message(message, bot)
@@ -411,7 +421,7 @@ def telegram_bot(token):
                         bot.reply_to(message, const.answer_triggers[temp_index])
                         return
                 r = random.randint(1, 100)
-                if r >= 92:
+                if r == 69:
                     text = get_html_damn(message.from_user.first_name)
                     if text == 1:
                         return
@@ -431,4 +441,8 @@ def telegram_bot(token):
 
 
 if __name__ == '__main__':
-    telegram_bot(os.environ.get('TOKEN'))
+    token = os.environ.get('TOKEN')
+    bot_tg = telebot.TeleBot(token)
+    loop = asyncio.create_task(auto_pidor(bot_tg))
+    
+    telegram_bot(bot_tg)
