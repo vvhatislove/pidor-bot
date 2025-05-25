@@ -1,2 +1,5 @@
 config.env
 /database/storage/database.db
+.env
+/venv
+/.idea

@@ -1,82 +1,92 @@
 from datetime import datetime, UTC
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Index
+from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Index
 from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
 
 Base = declarative_base()
 
 
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int] = mapped_column(Integer, index=True)
-    chat_id: Mapped[int] = mapped_column(Integer, index=True)
-    first_name: Mapped[str] = mapped_column(String(100))
-    username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    registration_date: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.now(UTC),
-        doc="Дата и время регистрации пользователя"
-    )
-    pidor_count: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
-        doc="Количество раз, когда пользователь был выбран пидором дня"
-    )
-    is_admin: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
-        doc="Является ли пользователь администратором бота"
-    )
-
-    # Составной индекс для часто используемых запросов
-    __table_args__ = (
-        Index('ix_user_telegram_chat', 'telegram_id', 'chat_id', unique=True),
-    )
-
-
 class Chat(Base):
+    """Модель чата/группы, где работает бот"""
     __tablename__ = "chats"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    chat_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        unique=True,
+        index=True,
+        doc="Telegram ID чата (отрицательный для групп)"
+    )
     title: Mapped[str] = mapped_column(
         String(100),
-        doc="Название чата для удобного отображения"
+        nullable=False,
+        doc="Название чата"
     )
 
-    # Отношение один-к-одному с Cooldown
+    # Связи
+    users: Mapped[list["User"]] = relationship(
+        back_populates="chat",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
     cooldown: Mapped["Cooldown"] = relationship(
-        "Cooldown",
         back_populates="chat",
         uselist=False,
         cascade="all, delete-orphan"
     )
 
 
+class User(Base):
+    """Модель пользователя в конкретном чате"""
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    telegram_id: Mapped[int] = mapped_column(
+        Integer,
+        index=True,
+        nullable=False,
+        doc="ID пользователя в Telegram"
+    )
+    chat_id: Mapped[int] = mapped_column(
+        ForeignKey("chats.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+        doc="Внутренний ID чата, к которому привязан пользователь"
+    )
+
+    # Данные пользователя
+    first_name: Mapped[str] = mapped_column(String(100))
+    username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    registration_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC)
+    )
+    pidor_count: Mapped[int] = mapped_column(default=0)
+    is_admin: Mapped[bool] = mapped_column(default=False)
+
+    # Связи
+    chat: Mapped["Chat"] = relationship(back_populates="users")
+
+    __table_args__ = (
+        Index("ix_user_telegram_chat", "telegram_id", "chat_id", unique=True),
+    )
+
+
 class Cooldown(Base):
+    """Настройки кулдауна для чата"""
     __tablename__ = "cooldowns"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     chat_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey('chats.id', ondelete="CASCADE"),
+        ForeignKey("chats.id", ondelete="CASCADE"),
         unique=True,
-        doc="Ссылка на чат, для которого установлен кулдаун"
+        nullable=False
     )
     last_activated: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.now(UTC),
-        doc="Время последней активации команды /pidor"
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC)
     )
-    cooldown_seconds: Mapped[int] = mapped_column(
-        Integer,
-        default=86400,  # 24 часа
-        doc="Длительность кулдауна в секундах"
-    )
+    cooldown_seconds: Mapped[int] = mapped_column(default=86400)
 
-    # Обратная ссылка на чат
-    chat: Mapped["Chat"] = relationship(
-        "Chat",
-        back_populates="cooldown"
-    )
+    chat: Mapped["Chat"] = relationship(back_populates="cooldown")

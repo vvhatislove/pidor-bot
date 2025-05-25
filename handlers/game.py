@@ -55,16 +55,9 @@ async def pidor_game(message: Message, session: AsyncSession):
     # Отправляем результат
     await message.answer(win_phrase)
 
-    # Проверка достижений
-    achievements = {
-        1: "🍍 Твоя первая анальная пробка!",
-        3: "🍩 Добро пожаловать в Анал-Лэнд!",
-        10: "🧘🏿 Ты открыл Gachi-чакру!"
-    }
-
-    if pidor.pidor_count in achievements:
+    if pidor.pidor_count in GameText.ACHIEVEMENTS:
         await message.answer(
-            f"🎉 {pidor.first_name} открыл достижение:\n"
-            f"{achievements[pidor.pidor_count]}\n"
-            f"Стать пидором {pidor.pidor_count} раз!"
+            f"🎉 {pidor.first_name if pidor.first_name else pidor.username} открыл достижение:\n"
+            f"{GameText.ACHIEVEMENTS[pidor.pidor_count][0]}\n"
+            f"{GameText.ACHIEVEMENTS[pidor.pidor_count][1]}"
         )

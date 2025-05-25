@@ -1,33 +1,43 @@
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta, UTC
-from .models import User, Cooldown
+from datetime import datetime, timedelta, UTC, timezone
+
+from config.config import config
+from .models import User, Cooldown, Chat
 
 
 class UserCRUD:
     @staticmethod
-    async def get_user(session: AsyncSession, telegram_id: int, chat_id: int) -> User | None:
+    async def get_user(session: AsyncSession, telegram_id: int, chat_telegram_id: int) -> User | None:
         result = await session.execute(
             select(User)
+            .join(Chat)
             .where(User.telegram_id == telegram_id)
-            .where(User.chat_id == chat_id)
+            .where(Chat.chat_id == chat_telegram_id)
         )
         return result.scalar_one_or_none()
 
     @staticmethod
     async def create_user(
-        session: AsyncSession,
-        telegram_id: int,
-        chat_id: int,
-        first_name: str,
-        username: str | None
+            session: AsyncSession,
+            telegram_id: int,
+            chat_telegram_id: int,
+            first_name: str,
+            username: str | None
     ) -> User:
+        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        if chat is None:
+            raise ValueError(f"Chat with telegram_id {chat_telegram_id} not found")
+        is_admin = False
+        if telegram_id == config.ADMIN_ID:
+            is_admin = True
         user = User(
             telegram_id=telegram_id,
-            chat_id=chat_id,
+            chat_id=chat.id,  # внутренний ID
             first_name=first_name,
             username=username,
-            registration_date=datetime.utcnow()
+            registration_date=datetime.now(UTC),
+            is_admin=is_admin
         )
         session.add(user)
         await session.commit()
@@ -35,28 +45,32 @@ class UserCRUD:
 
     @staticmethod
     async def delete_user(session: AsyncSession, user: User) -> None:
-        await session.execute(
-            delete(User)
-            .where(User.id == user.id)
-        )
+        await session.execute(delete(User).where(User.id == user.id))
         await session.commit()
 
     @staticmethod
-    async def get_chat_users(session: AsyncSession, chat_id: int) -> list[User]:
+    async def get_chat_users(session: AsyncSession, chat_telegram_id: int) -> list[User]:
+        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        if not chat:
+            return []
+
         result = await session.execute(
             select(User)
-            .where(User.chat_id == chat_id)
+            .where(User.chat_id == chat.id)
             .order_by(User.pidor_count.desc())
         )
-        return list(result.scalars().all())
+        return result.scalars().all()
 
 
 class CooldownCRUD:
     @staticmethod
-    async def get_cooldown(session: AsyncSession, chat_id: int) -> Cooldown | None:
+    async def get_cooldown(session: AsyncSession, chat_telegram_id: int) -> Cooldown | None:
+        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        if not chat:
+            return None
+
         result = await session.execute(
-            select(Cooldown)
-            .where(Cooldown.chat_id == chat_id)
+            select(Cooldown).where(Cooldown.chat_id == chat.id)
         )
         return result.scalar_one_or_none()
 
@@ -66,27 +80,32 @@ class CooldownCRUD:
         if not cooldown:
             return None
 
-        current_time = datetime.now(UTC)
-        expiration_time = cooldown.last_activated + timedelta(seconds=cooldown.cooldown_seconds)
+        last_activated = cooldown.last_activated
+        if last_activated.tzinfo is None:
+            last_activated = last_activated.replace(tzinfo=timezone.utc)
 
-        # Убедимся, что оба значения времени имеют UTC
-        if cooldown.last_activated.tzinfo is None:
-            expiration_time = expiration_time.replace(tzinfo=UTC)
+        expiration_time = last_activated + timedelta(seconds=cooldown.cooldown_seconds)
+        current_time = datetime.now(timezone.utc)
 
-        remaining = expiration_time - current_time
-        return remaining if remaining.total_seconds() > 0 else None
-
+        return max(expiration_time - current_time, timedelta(0)) if expiration_time > current_time else None
     @staticmethod
     async def set_cooldown(
             session: AsyncSession,
-            chat_id: int,
+            chat_telegram_id: int,
             cooldown_seconds: int = 86400
     ) -> Cooldown:
-        cooldown = await CooldownCRUD.get_cooldown(session, chat_id)
+        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        if not chat:
+            raise ValueError(f"Chat with telegram_id {chat_telegram_id} not found")
 
-        if not cooldown:
+        result = await session.execute(
+            select(Cooldown).where(Cooldown.chat_id == chat.id)
+        )
+        cooldown = result.scalar_one_or_none()
+
+        if cooldown is None:
             cooldown = Cooldown(
-                chat_id=chat_id,
+                chat_id=chat.id,
                 cooldown_seconds=cooldown_seconds,
                 last_activated=datetime.now(UTC)
             )
@@ -97,3 +116,26 @@ class CooldownCRUD:
 
         await session.commit()
         return cooldown
+
+
+class ChatCRUD:
+    @staticmethod
+    async def get_chat(session: AsyncSession, chat_telegram_id: int) -> Chat | None:
+        result = await session.execute(
+            select(Chat).where(Chat.chat_id == chat_telegram_id)
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def create_chat(session: AsyncSession, chat_telegram_id: int, title: str) -> Chat:
+        existing = await ChatCRUD.get_chat(session, chat_telegram_id)
+        if existing:
+            return existing
+
+        chat = Chat(
+            chat_id=chat_telegram_id,
+            title=title
+        )
+        session.add(chat)
+        await session.commit()
+        return chat

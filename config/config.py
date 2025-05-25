@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     BOT_TOKEN: str
     ADMIN_ID: int
     DATABASE_URL: str
+    OPENROUTER_API_KEY: str
 
     class Config:
         env_file = Path(__file__).parent.parent / '.env'

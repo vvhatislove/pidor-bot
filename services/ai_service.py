@@ -1,13 +1,17 @@
 import g4f
+from g4f.Provider import provider
+from config.config import config
+g4f.Provider.OpenRouter.api_key = config.OPENROUTER_API_KEY
 
 class AIService:
+
     @staticmethod
     async def get_response(prompt: str) -> str:
-        try:
-            response = await g4f.ChatCompletion.create_async(
-                model=g4f.models.gpt_3_5_turbo,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response
-        except Exception as e:
-            return f"Ошибка при получении ответа: {str(e)}"
+        print(prompt)
+        response = await g4f.ChatCompletion.create_async(
+            model="deepseek/deepseek-chat",
+            messages=[{"role": "user", "content": prompt}],
+            web_search=False,
+            provider=g4f.Provider.OpenRouter
+        )
+        return response

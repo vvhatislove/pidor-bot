@@ -1,7 +1,7 @@
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
-from database.crud import UserCRUD
+from database.crud import UserCRUD, ChatCRUD
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.constants import CommandText
 
@@ -15,15 +15,23 @@ async def register_user(message: Message, session: AsyncSession):
         return
 
     user = await UserCRUD.get_user(session, message.from_user.id, message.chat.id)
-
     if user:
         await message.answer("Вы уже зарегистрировались 🤡")
         return
 
+    chat = await ChatCRUD.get_chat(session, message.chat.id)
+
+    if chat is None:
+        chat = await ChatCRUD.create_chat(
+            session=session,
+            chat_telegram_id=message.chat.id,
+            title=message.chat.title
+        )
+
     new_user = await UserCRUD.create_user(
         session=session,
         telegram_id=message.from_user.id,
-        chat_id=message.chat.id,
+        chat_telegram_id=chat.chat_id,
         first_name=message.from_user.first_name,
         username=message.from_user.username
     )
