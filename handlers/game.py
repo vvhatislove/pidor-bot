@@ -64,7 +64,7 @@ async def cmd_pidor(message: Message, session: AsyncSession):
     await session.commit()
     logger.info(f"Updated pidor count for user {pidor.telegram_id}: {pidor.pidor_count}")
 
-    await CooldownService.activate_cooldown(session, message.chat.id, 0) # Cooldown.DEFAULT
+    await CooldownService.activate_cooldown(session, message.chat.id, Cooldown.DEFAULT) # Cooldown.DEFAULT
     logger.info(f"Cooldown activated for chat {message.chat.id}")
 
     await message.answer(win_phrase)

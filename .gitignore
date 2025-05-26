@@ -4,3 +4,6 @@ config.env
 /venv
 /.idea
 /bot.log
+__pycache__/
+*.py[cod]
+*$py.class
