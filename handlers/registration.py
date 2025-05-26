@@ -79,3 +79,22 @@ async def show_registered_users(message: Message, session: AsyncSession):
     )
 
     await message.answer(f"📋 Зарегистрированные участники:\n{users_list}")
+
+
+@router.message(Command("updatedata"))
+async def cmd_updatedata(message: Message, session: AsyncSession):
+    if message.chat.type == "private":
+        await message.answer(CommandText.WRONG_CHAT)
+        return
+    user = await UserCRUD.get_user(session, message.from_user.id, message.chat.id)
+    if not user:
+        await message.answer("Вы не зарегистрированы в чате")
+        return
+    await UserCRUD.update_user_and_chat(session,
+                                        message.from_user.id,
+                                        message.chat.id,
+                                        message.from_user.first_name,
+                                        message.from_user.username,
+                                        message.chat.title)
+    await message.answer(
+        f"Твои данные перезаписаны в ПидорБазу!📃\n👉Имя: {message.from_user.first_name}\n👉Никнейм: {message.from_user.username}")

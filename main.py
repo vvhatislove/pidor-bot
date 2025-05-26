@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher
 from config.config import config
 from database import init_db
 from middlewares.db_middleware import DbSessionMiddleware
-from handlers import common, admin, game, registration
+from handlers import common, admin, game, registration, triggers
 
 
 async def main():
@@ -20,7 +20,8 @@ async def main():
         common.router,
         # admin.router,
         game.router,
-        registration.router
+        registration.router,
+        triggers.router
     ]:
         dp.include_router(router)
 

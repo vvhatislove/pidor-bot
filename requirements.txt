@@ -1,0 +1,5 @@
+pydantic-settings
+aiogram
+requests
+SQLAlchemy
+g4f

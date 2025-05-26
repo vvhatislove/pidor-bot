@@ -1,4 +1,6 @@
-from sqlalchemy import select, update, delete
+from typing import Any, Coroutine, Sequence
+
+from sqlalchemy import select, update, delete, Row, RowMapping
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, UTC, timezone
 
@@ -49,7 +51,7 @@ class UserCRUD:
         await session.commit()
 
     @staticmethod
-    async def get_chat_users(session: AsyncSession, chat_telegram_id: int) -> list[User]:
+    async def get_chat_users(session: AsyncSession, chat_telegram_id: int) -> list[Any] | Sequence[User]:
         chat = await ChatCRUD.get_chat(session, chat_telegram_id)
         if not chat:
             return []
@@ -60,6 +62,41 @@ class UserCRUD:
             .order_by(User.pidor_count.desc())
         )
         return result.scalars().all()
+
+    @staticmethod
+    async def update_user_and_chat(
+            session: AsyncSession,
+            telegram_id: int,
+            chat_telegram_id: int,
+            first_name: str,
+            username: str | None,
+            chat_title: str
+    ) -> None:
+        # Получаем пользователя
+        result = await session.execute(
+            select(User).join(Chat).where(
+                User.telegram_id == telegram_id,
+                Chat.chat_id == chat_telegram_id
+            )
+        )
+        user = result.scalar_one_or_none()
+
+        # Получаем чат
+        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        if not chat:
+            raise ValueError(f"Chat with telegram_id {chat_telegram_id} not found")
+
+        # Обновляем пользователя, если найден
+        if user:
+            user.first_name = first_name
+            user.username = username
+        else:
+            raise ValueError(f"User with telegram_id {telegram_id} not found in chat {chat_telegram_id}")
+
+        # Обновляем название чата
+        chat.title = chat_title
+
+        await session.commit()
 
 
 class CooldownCRUD:
