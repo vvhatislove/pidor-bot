@@ -4,7 +4,12 @@ from aiogram import Router, F
 from aiogram.types import Message
 
 from config.constants import CommandText, GameText, AIPromt
+from logger import setup_logger
 from services.ai_service import AIService
+
+logger = setup_logger(__name__)
+
+
 
 router = Router()
 
@@ -28,13 +33,15 @@ async def trigger_handler(message: Message):
         try:
             text = str(text)
         except Exception as e:
-            print(f"Ошибка преобразования в строку: {e}")
+            logger.error(f"Error in trigger_handler: {e}")
             return
-
+        text = text.lower()
+        logger.info("TRIGGER: %s", text)
         for trigger in GameText.TRIGGERS:
             if trigger in text:
                 trigger_message = await AIService.get_response(text, AIPromt.PIDOR_TRIGGERS_PROMT)
                 if trigger_message:
+                    logger.info("Sended trigger answer")
                     await message.reply(trigger_message)
                 break
 

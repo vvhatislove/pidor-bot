@@ -4,11 +4,15 @@ from config.config import config
 from database import init_db
 from middlewares.db_middleware import DbSessionMiddleware
 from handlers import common, admin, game, registration, triggers
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 async def main():
+    logger.info("Starting bot")
     await init_db()
-
+    logger.info("Database initialized")
     bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()
 
@@ -24,9 +28,12 @@ async def main():
         triggers.router
     ]:
         dp.include_router(router)
-
+    logger.info("Routers registered")
     await dp.start_polling(bot)
-
+    logger.info("Bot stopped")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("Bot stopped by user")

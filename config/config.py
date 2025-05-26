@@ -1,6 +1,9 @@
+from pydantic import ValidationError
 from pydantic_settings import BaseSettings
 from pathlib import Path
+from logger import setup_logger
 
+logger = setup_logger(__name__)
 
 class Settings(BaseSettings):
     BOT_TOKEN: str
@@ -14,4 +17,10 @@ class Settings(BaseSettings):
         env_file_encoding = 'utf-8'
 
 
-config = Settings()
+try:
+    config = Settings()
+    logger.info("Configuration loaded")
+except ValidationError as e:
+    logger.error("Error while loading configuration")
+    logger.error(e.json())
+    raise SystemExit("Невозможно продолжить без корректного .env файла.")
