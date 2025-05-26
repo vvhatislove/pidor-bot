@@ -11,11 +11,20 @@ async def trigger_handler(message: Message):
     if message.chat.type == "private":
         await message.answer(CommandText.WRONG_CHAT)
         return
-    text = message.text.lower()
+    if message.text:
+        text = message.text
+        if not isinstance(text, str):
+            return
+        else:
+            try:
+                text = str(text)
+            except Exception as e:
+                print(f"Ошибка преобразования в строку: {e}")
+                return
+            for trigger in GameText.TRIGGERS:
+                if trigger in text:
+                    trigger_message = await AIService.get_response(text, AIPromt.PIDOR_TRIGGERS_PROMT)
+                    await message.reply(trigger_message)
+                    break  # чтобы не отвечать на несколько триггеров одновременно
 
-    for trigger in GameText.TRIGGERS:
-        if trigger in text:
-            print('TRIGGER handler')
-            trigger_message = await AIService.get_response(text, AIPromt.PIDOR_TRIGGERS_PROMT)
-            await message.reply(trigger_message)
-            break  # чтобы не отвечать на несколько триггеров одновременно
+
