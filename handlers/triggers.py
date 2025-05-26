@@ -34,7 +34,8 @@ async def trigger_handler(message: Message):
         for trigger in GameText.TRIGGERS:
             if trigger in text:
                 trigger_message = await AIService.get_response(text, AIPromt.PIDOR_TRIGGERS_PROMT)
-                await message.reply(trigger_message)
+                if trigger_message:
+                    await message.reply(trigger_message)
                 break
 
 
