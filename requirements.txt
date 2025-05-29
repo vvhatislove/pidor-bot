@@ -5,3 +5,4 @@ requests
 SQLAlchemy
 g4f
 aiosqlite
+alembic
