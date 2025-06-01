@@ -4,7 +4,8 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.crud import UserCRUD
+from database.crud import UserCRUD, CurrencyTransactionCRUD
+from handlers.utils import get_display_name
 from services.ai_service import AIService
 from services.cooldown import CooldownService
 from config.constants import GameText, CommandText, AIPromt, Cooldown
@@ -25,10 +26,9 @@ async def cmd_pidor(message: Message, session: AsyncSession):
         await message.answer(CommandText.WRONG_CHAT)
         return
 
-    cooldown_status = await CooldownService.check_cooldown(session, message.chat.id)
-    if cooldown_status:
-        logger.info(f"Cooldown active in chat {message.chat.id}: {cooldown_status}")
-        await message.answer(f"До следующего определения пидора осталось {cooldown_status} ⏳")
+    if await CooldownService.check_cooldown(session, message.chat.id):
+        logger.info(f"Cooldown active in chat {message.chat.id}")
+        await message.answer("🐔Пидор на сегодня уже известен. ♻️Попробуйте завтра")
         return
 
     users = await UserCRUD.get_chat_users(session, message.chat.id)
@@ -56,18 +56,22 @@ async def cmd_pidor(message: Message, session: AsyncSession):
 
     pidor = random.choice(users)
     win_phrase = win_phrase.format(
-        name=f"@{pidor.username}" if pidor.username else pidor.first_name
+        name=get_display_name(pidor)
     )
     logger.info(f"Selected pidor of the day: {pidor.telegram_id}")
-
     pidor.pidor_count += 1
+    pidor_coins = 100
+    await  UserCRUD.increase_balance(session, pidor.telegram_id, pidor_coins)
+    await CurrencyTransactionCRUD.create_transaction(session, pidor.telegram_id, pidor_coins, "pidor of the day")
+    logger.info(f"Created pidor of the day transaction for user {pidor.telegram_id}")
     await session.commit()
     logger.info(f"Updated pidor count for user {pidor.telegram_id}: {pidor.pidor_count}")
+    logger.info(f"Increased balance for user {pidor.telegram_id}: {pidor_coins}")
 
     await CooldownService.activate_cooldown(session, message.chat.id, Cooldown.DEFAULT) # Cooldown.DEFAULT
     logger.info(f"Cooldown activated for chat {message.chat.id}")
 
-    await message.answer(win_phrase)
+    await message.answer(win_phrase + f"\n\n\n+🪙{pidor_coins} PidorCoins нашему пидорасику")
 
     if pidor.pidor_count in GameText.ACHIEVEMENTS:
         achievement = GameText.ACHIEVEMENTS[pidor.pidor_count]

@@ -1,11 +1,11 @@
 from typing import Any, Sequence
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, UTC, timezone
 
 from config.config import config
-from .models import User, Cooldown, Chat
+from .models import User, Cooldown, Chat, CurrencyTransaction
 
 from logger import setup_logger
 
@@ -13,6 +13,16 @@ logger = setup_logger(__name__)
 
 
 class UserCRUD:
+    @staticmethod
+    async def increase_balance(session: AsyncSession, telegram_id: int, amount: int):
+        stmt = (
+            update(User)
+            .where(User.telegram_id == telegram_id)
+            .values(balance=User.balance + amount)
+            .execution_options(synchronize_session="fetch")
+        )
+        await session.execute(stmt)
+        await session.commit()
     @staticmethod
     async def get_user(session: AsyncSession, telegram_id: int, chat_telegram_id: int) -> User | None:
         logger.debug(f"Attempting to get user {telegram_id} from chat {chat_telegram_id}")
@@ -229,3 +239,30 @@ class ChatCRUD:
         await session.commit()
         logger.info(f"Successfully created chat {chat_telegram_id}")
         return chat
+
+class CurrencyTransactionCRUD:
+    @staticmethod
+    async def create_transaction(session: AsyncSession, user_id: int, amount: int, reason: str) -> CurrencyTransaction:
+        if amount <= 0:
+            raise ValueError(f"Невозможно создать транзакцию с amount={amount}. Значение должно быть > 0.")
+
+        transaction = CurrencyTransaction(
+            user_id=user_id,
+            amount=amount,
+            reason=reason,
+            created_at=datetime.now(UTC)
+        )
+        session.add(transaction)
+        return transaction
+
+    @staticmethod
+    async def get_user_transactions(session: AsyncSession, user_id: int) -> Sequence[CurrencyTransaction]:
+        stmt = select(CurrencyTransaction).where(CurrencyTransaction.user_id == user_id)
+        result = await session.execute(stmt)
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_all_transactions(session: AsyncSession) -> Sequence[CurrencyTransaction]:
+        stmt = select(CurrencyTransaction).order_by(CurrencyTransaction.created_at.desc())
+        result = await session.execute(stmt)
+        return result.scalars().all()

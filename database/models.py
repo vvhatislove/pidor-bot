@@ -188,6 +188,8 @@ class Skill(Base):
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
+    user_skills = relationship("UserSkill", back_populates="skill")
+
 class UserSkill(Base):
     __tablename__ = "user_skills"
 

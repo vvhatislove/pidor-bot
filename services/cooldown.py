@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from typing import Optional
 from database.crud import CooldownCRUD
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,37 +10,25 @@ logger = setup_logger(__name__)
 
 class CooldownService:
     @staticmethod
-    async def check_cooldown(
-            session: AsyncSession,
-            chat_id: int
-    ) -> Optional[str]:
-        logger.debug(f"Checking cooldown for chat_id={chat_id}")
-        remaining = await CooldownCRUD.check_cooldown(session, chat_id)
+    async def check_cooldown(session: AsyncSession, chat_id: int) -> bool:
+        """
+        Возвращает True, если кулдаун уже сработал сегодня.
+        """
+        logger.debug(f"Checking date-based cooldown for chat {chat_id}")
+        cooldown = await CooldownCRUD.get_cooldown(session, chat_id)
+        if not cooldown:
+            logger.debug(f"No cooldown set for chat {chat_id}")
+            return False
 
-        if not remaining:
-            logger.debug(f"No active cooldown for chat_id={chat_id}")
-            return None
+        last_date = cooldown.last_activated.date()
+        today_date = datetime.now(timezone.utc).date()
 
-        total_hours = remaining.days * 24 + remaining.seconds // 3600
-        minutes = (remaining.seconds % 3600) // 60
 
-        logger.debug(f"Cooldown remaining for chat_id={chat_id}: {remaining}")
-
-        if total_hours >= 24:
-            days = total_hours // 24
-            hours = total_hours % 24
-            formatted = f"{days} дней {hours} часов"
-            logger.debug(f"Formatted cooldown: {formatted}")
-            return formatted
-
-        if total_hours > 0:
-            formatted = f"{total_hours} часов {minutes} минут"
-            logger.debug(f"Formatted cooldown: {formatted}")
-            return formatted
-
-        formatted = f"{minutes} минут"
-        logger.debug(f"Formatted cooldown: {formatted}")
-        return formatted
+        if last_date == today_date:
+            logger.debug(f"Cooldown already used today in chat {chat_id}")
+            return True
+        logger.debug(f"Cooldown not used today in chat {chat_id}")
+        return False
 
     @staticmethod
     async def activate_cooldown(
