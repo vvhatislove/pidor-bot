@@ -21,7 +21,7 @@ async def register_user(message: Message, session: AsyncSession):
         logger.info("Registration rejected: private chat")
         return
 
-    user = await UserCRUD.get_user(session, message.from_user.id, message.chat.id)
+    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
     if user:
         await message.answer("Вы уже зарегистрировались 🤡")
         logger.info("User is already registered")
@@ -56,7 +56,7 @@ async def unregister_user(message: Message, session: AsyncSession):
         logger.info("Unregistration rejected: private chat")
         return
 
-    user = await UserCRUD.get_user(session, message.from_user.id, message.chat.id)
+    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
     if not user:
         await message.answer("Вы и так не зарегистрированы 🤡")
         logger.info("User is not registered")
@@ -104,7 +104,7 @@ async def cmd_updatedata(message: Message, session: AsyncSession):
         logger.info("Update data rejected: private chat")
         return
 
-    user = await UserCRUD.get_user(session, message.from_user.id, message.chat.id)
+    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
     if not user:
         await message.answer("Вы не зарегистрированы в чате")
         logger.info("User not found for update")

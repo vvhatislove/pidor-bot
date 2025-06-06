@@ -1,11 +1,11 @@
-from typing import Any, Sequence
+from typing import Any, Sequence, Optional
 
 from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, UTC, timezone
 
 from config.config import config
-from .models import User, Cooldown, Chat, CurrencyTransaction
+from .models import User, Cooldown, Chat, CurrencyTransaction, Duel, DuelStatus
 
 from logger import setup_logger
 
@@ -13,6 +13,17 @@ logger = setup_logger(__name__)
 
 
 class UserCRUD:
+    @staticmethod
+    async def get_user_by_username(session: AsyncSession, username: str, chat_telegram_id: int) -> User | None:
+        result = await session.execute(
+            select(User)
+            .join(Chat)
+            .where(User.username == username.lstrip("@"))
+            .where(Chat.chat_id == chat_telegram_id)
+        )
+        user = result.scalar_one_or_none()
+        return user
+
     @staticmethod
     async def increase_balance(session: AsyncSession, telegram_id: int, amount: int):
         stmt = (
@@ -24,7 +35,7 @@ class UserCRUD:
         await session.execute(stmt)
         await session.commit()
     @staticmethod
-    async def get_user(session: AsyncSession, telegram_id: int, chat_telegram_id: int) -> User | None:
+    async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int, chat_telegram_id: int) -> User | None:
         logger.debug(f"Attempting to get user {telegram_id} from chat {chat_telegram_id}")
         result = await session.execute(
             select(User)
@@ -242,7 +253,7 @@ class ChatCRUD:
 
 class CurrencyTransactionCRUD:
     @staticmethod
-    async def create_transaction(session: AsyncSession, user_id: int, amount: int, reason: str) -> CurrencyTransaction:
+    async def create_transaction(session: AsyncSession, user_id: int, amount: float, reason: str) -> CurrencyTransaction:
         if amount <= 0:
             raise ValueError(f"Невозможно создать транзакцию с amount={amount}. Значение должно быть > 0.")
 
@@ -266,3 +277,70 @@ class CurrencyTransactionCRUD:
         stmt = select(CurrencyTransaction).order_by(CurrencyTransaction.created_at.desc())
         result = await session.execute(stmt)
         return result.scalars().all()
+
+class DuelCRUD:
+
+    @staticmethod
+    async def create_duel(
+        session: AsyncSession,
+        chat_id: int,
+        initiator_id: int,
+        opponent_id: int,
+        amount: float
+    ) -> Duel:
+        duel = Duel(
+            chat_id=chat_id,
+            initiator_id=initiator_id,
+            opponent_id=opponent_id,
+            amount=amount,
+            start_time=datetime.now(UTC)
+        )
+        session.add(duel)
+        await session.commit()
+        await session.refresh(duel)
+        return duel
+
+    @staticmethod
+    async def get_duel_by_id(session: AsyncSession, duel_id: int) -> Optional[Duel]:
+        result = await session.execute(
+            select(Duel).where(Duel.id == duel_id)
+        )
+        return result.scalar_one_or_none()
+
+    # async def get_active_duels_by_chat(self, chat_id: int) -> List[Duel]:
+    #     result = await self.session.execute(
+    #         select(Duel).where(
+    #             Duel.chat_id == chat_id,
+    #             Duel.status.in_([
+    #                 DuelStatus.WAITING_FOR_CONFIRMATION,
+    #                 DuelStatus.WAITING_FOR_BETS,
+    #                 DuelStatus.IN_PROGRESS
+    #             ])
+    #         )
+    #     )
+    #     return result.scalars().all()
+
+    @staticmethod
+    async def update_duel_status(session: AsyncSession, duel_id: int, status: DuelStatus) -> None:
+        await session.execute(
+            update(Duel).where(Duel.id == duel_id).values(status=status)
+        )
+        await session.commit()
+
+    @staticmethod
+    async def set_duel_winner(session: AsyncSession, duel_id: int, winner_id: int) -> None:
+        await session.execute(
+            update(Duel).where(Duel.id == duel_id).values(winner_id=winner_id)
+        )
+        await session.commit()
+
+    @staticmethod
+    async def get_pending_confirmation(session: AsyncSession, chat_id: int, opponent_id: int) -> Optional[Duel]:
+        result = await session.execute(
+            select(Duel).where(
+                Duel.chat_id == chat_id,
+                Duel.opponent_id == opponent_id,
+                Duel.status == DuelStatus.WAITING_FOR_CONFIRMATION
+            )
+        )
+        return result.scalar_one_or_none()

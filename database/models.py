@@ -106,6 +106,7 @@ class Cooldown(Base):
 
 
 class DuelStatus(str, Enum):
+    WAITING_FOR_CONFIRMATION = "waiting_confirmation"
     PENDING = "pending"      # Идёт приём ставок
     ACTIVE = "active"        # Дуэль в процессе
     FINISHED = "finished"    # Дуэль завершена
@@ -121,7 +122,16 @@ class Duel(Base):
     opponent_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     winner_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
-
+    amount: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        doc="Ставка дуэли между участниками"
+    )
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Время принятия дуэли оппонентом"
+    )
     start_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -133,7 +143,7 @@ class Duel(Base):
     )
     status: Mapped[DuelStatus] = mapped_column(
         SQLEnum(DuelStatus, name="duelstatus"),
-        default=DuelStatus.PENDING,
+        default=DuelStatus.WAITING_FOR_CONFIRMATION,
         nullable=False
     )
     initiator_win_chance: Mapped[Optional[float]] = mapped_column(
@@ -170,7 +180,7 @@ class Bet(Base):
     duel_id: Mapped[int] = mapped_column(ForeignKey("duels.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    amount: Mapped[int] = mapped_column(nullable=False, doc="Сумма ставки")
+    amount: Mapped[float] = mapped_column(Float, nullable=False, doc="Сумма ставки")
     target: Mapped[BetTarget] = mapped_column(SQLEnum(BetTarget), nullable=False, doc="На кого сделана ставка")
 
     created_at: Mapped[datetime] = mapped_column(
@@ -187,7 +197,6 @@ class Skill(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-
     user_skills = relationship("UserSkill", back_populates="skill")
 
 class UserSkill(Base):
@@ -214,7 +223,7 @@ class CurrencyTransaction(Base):
     __tablename__ = "currency_transactions"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    amount: Mapped[int] = mapped_column(nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
     reason: Mapped[str] = mapped_column(String(100), nullable=False)  # например, "pidor_of_the_day"
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
 

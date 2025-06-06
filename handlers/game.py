@@ -1,10 +1,11 @@
 import asyncio
+import re
 
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.crud import UserCRUD, CurrencyTransactionCRUD
+from database.crud import UserCRUD, CurrencyTransactionCRUD, DuelCRUD
 from handlers.utils import get_display_name
 from services.ai_service import AIService
 from services.cooldown import CooldownService
@@ -136,3 +137,46 @@ async def cmd_achievements(message: Message, session: AsyncSession):
 
     logger.info(f"Displayed achievements for user {user.telegram_id} with {user.pidor_count} count")
     await message.answer("\n".join(achievement_lines))
+
+@router.message(Command("duel"))
+async def cmd_duel(message: Message, session: AsyncSession):
+    # Проверка, что это группа
+    if message.chat.type == "private":
+        await message.answer(CommandText.WRONG_CHAT)
+        return
+
+    # Извлекаем username и сумму
+    pattern = r"/duel\s+@(\w+)\s+(\d+(?:[.,]\d{1,2})?)"
+    match = re.match(pattern, message.text.strip())
+
+    if not match:
+        await message.answer("Неверный формат. Используйте: /duel @username 100")
+        return
+    username_opponent = match.group(1)
+    amount = float(match.group(2))
+    if amount <= 0:
+        await message.answer("Сумма должна быть больше нуля.")
+        return
+    if username_opponent == message.from_user.username:
+        await message.answer("Нельзя драться самому с собой")
+        return
+    initiator = await UserCRUD.get_user_by_username(session, message.from_user.username, message.chat.id)
+    if not initiator:
+        await message.answer("Вы не зарегистрированы в чате")
+        return
+    opponent = await UserCRUD.get_user_by_username(session, username_opponent, message.chat.id)
+    if not opponent:
+        await message.answer(f"Пользователь {username_opponent} не зарегистрирован в базе")
+        return
+    if initiator.balance < amount:
+        await message.answer("Недостаточно средств")
+        return
+    if opponent.balance < amount:
+        await message.answer(f"У пользователя {username_opponent} недостаточно средств")
+        return
+    initiator.balance -= amount
+    opponent.balance -= amount
+    await CurrencyTransactionCRUD.create_transaction(session, initiator.telegram_id, amount, "duel initiator bet")
+    await CurrencyTransactionCRUD.create_transaction(session, opponent.telegram_id, amount, "duel opponent bet")
+    duel = await DuelCRUD.create_duel(session, message.chat.id, initiator.telegram_id, opponent.telegram_id, amount)
+    await session.commit()
