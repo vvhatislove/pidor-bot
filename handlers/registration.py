@@ -39,7 +39,7 @@ async def register_user(message: Message, session: AsyncSession):
     new_user = await UserCRUD.create_user(
         session=session,
         telegram_id=message.from_user.id,
-        chat_telegram_id=chat.chat_id,
+        chat_telegram_id=chat.telegram_chat_id,
         first_name=message.from_user.first_name,
         username=message.from_user.username
     )

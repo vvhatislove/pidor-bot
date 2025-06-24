@@ -1,17 +1,21 @@
 import asyncio
 import re
+from datetime import datetime, UTC
 
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.crud import UserCRUD, CurrencyTransactionCRUD, DuelCRUD
+from database.crud import UserCRUD, CurrencyTransactionCRUD, DuelCRUD, ChatCRUD
+from database.models import DuelStatus
 from handlers.utils import get_display_name
 from services.ai_service import AIService
 from services.cooldown import CooldownService
 from config.constants import GameText, CommandText, AIPromt, Cooldown
 import random
 from logger import setup_logger
+from services.duel_logic import wait_for_acceptance, schedule_duel_resolution
+from services.slots_logic import get_combo_text
 
 logger = setup_logger(__name__)
 
@@ -174,9 +178,33 @@ async def cmd_duel(message: Message, session: AsyncSession):
     if opponent.balance < amount:
         await message.answer(f"У пользователя {username_opponent} недостаточно средств")
         return
+    chat = await ChatCRUD.get_chat(session, message.chat.id)
     initiator.balance -= amount
     opponent.balance -= amount
     await CurrencyTransactionCRUD.create_transaction(session, initiator.telegram_id, amount, "duel initiator bet")
     await CurrencyTransactionCRUD.create_transaction(session, opponent.telegram_id, amount, "duel opponent bet")
-    duel = await DuelCRUD.create_duel(session, message.chat.id, initiator.telegram_id, opponent.telegram_id, amount)
+    duel = await DuelCRUD.create_duel(session, chat.id, initiator.id, opponent.id, amount)
     await session.commit()
+    await message.answer(f"@{message.from_user.username} по пидорски вызвал на дуэль @{username_opponent} на сумму {amount} PidorCoins")
+    asyncio.create_task(wait_for_acceptance(message.bot, session, duel.id, message.chat.id))
+
+@router.message(Command("accept_duel"))
+async def cmd_accept_duel(message: Message, session: AsyncSession):
+    if message.chat.type == "private":
+        await message.answer(CommandText.WRONG_CHAT)
+        return
+    duel = await DuelCRUD.get_pending_confirmation(session, message.chat.id, message.from_user.id)
+    if not duel:
+        await message.answer("Вас не вызывали на дуэль")
+        return
+    duel.status = DuelStatus.ACTIVE
+    duel.accepted_at = datetime.now(UTC)
+    await session.commit()
+    await message.answer("Дуэль принята, начало через 5мин, начат прием ставок")
+    asyncio.create_task(schedule_duel_resolution(message.bot, session, duel.id))
+
+@router.message(Command("test"))
+async def cmd_test(message: Message, session: AsyncSession):
+    bot = message.bot
+    data = await bot.send_dice(message.chat.id, emoji='🎰')
+    await bot.send_message(message.chat.id, f'значение слоты {get_combo_text(data.dice.value)}')

@@ -4,6 +4,8 @@ from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timedelta, UTC, timezone
 
+from sqlalchemy.orm import Mapped, selectinload
+
 from config.config import config
 from .models import User, Cooldown, Chat, CurrencyTransaction, Duel, DuelStatus
 
@@ -19,7 +21,7 @@ class UserCRUD:
             select(User)
             .join(Chat)
             .where(User.username == username.lstrip("@"))
-            .where(Chat.chat_id == chat_telegram_id)
+            .where(Chat.telegram_chat_id == chat_telegram_id)
         )
         user = result.scalar_one_or_none()
         return user
@@ -41,7 +43,7 @@ class UserCRUD:
             select(User)
             .join(Chat)
             .where(User.telegram_id == telegram_id)
-            .where(Chat.chat_id == chat_telegram_id)
+            .where(Chat.telegram_chat_id == chat_telegram_id)
         )
         user = result.scalar_one_or_none()
         if user:
@@ -119,7 +121,7 @@ class UserCRUD:
         result = await session.execute(
             select(User).join(Chat).where(
                 User.telegram_id == telegram_id,
-                Chat.chat_id == chat_telegram_id
+                Chat.telegram_chat_id == chat_telegram_id
             )
         )
         user = result.scalar_one_or_none()
@@ -222,17 +224,12 @@ class CooldownCRUD:
 
 class ChatCRUD:
     @staticmethod
-    async def get_chat(session: AsyncSession, chat_telegram_id: int) -> Chat | None:
-        logger.debug(f"Looking up chat {chat_telegram_id}")
+    async def get_chat(session: AsyncSession, telegram_chat_id: int) -> Chat | None:
+        logger.debug(f"Looking up chat {telegram_chat_id}")
         result = await session.execute(
-            select(Chat).where(Chat.chat_id == chat_telegram_id)
+            select(Chat).where(Chat.telegram_chat_id == telegram_chat_id)
         )
-        chat = result.scalar_one_or_none()
-        if chat:
-            logger.debug(f"Found chat {chat_telegram_id} ({chat.title})")
-        else:
-            logger.debug(f"Chat {chat_telegram_id} not found")
-        return chat
+        return result.scalar_one_or_none()
 
     @staticmethod
     async def create_chat(session: AsyncSession, chat_telegram_id: int, title: str) -> Chat:
@@ -243,7 +240,7 @@ class ChatCRUD:
             return existing
 
         chat = Chat(
-            chat_id=chat_telegram_id,
+            telegram_chat_id=chat_telegram_id,
             title=title
         )
         session.add(chat)
@@ -283,17 +280,16 @@ class DuelCRUD:
     @staticmethod
     async def create_duel(
         session: AsyncSession,
-        chat_id: int,
+        chat_id: int ,
         initiator_id: int,
-        opponent_id: int,
+        opponent_id:  int,
         amount: float
     ) -> Duel:
         duel = Duel(
             chat_id=chat_id,
             initiator_id=initiator_id,
             opponent_id=opponent_id,
-            amount=amount,
-            start_time=datetime.now(UTC)
+            amount=amount
         )
         session.add(duel)
         await session.commit()
@@ -303,7 +299,14 @@ class DuelCRUD:
     @staticmethod
     async def get_duel_by_id(session: AsyncSession, duel_id: int) -> Optional[Duel]:
         result = await session.execute(
-            select(Duel).where(Duel.id == duel_id)
+            select(Duel)
+            .options(
+                selectinload(Duel.initiator),
+                selectinload(Duel.opponent),
+                selectinload(Duel.chat),
+                selectinload(Duel.bets)
+            )
+            .where(Duel.id == duel_id)
         )
         return result.scalar_one_or_none()
 
@@ -335,12 +338,17 @@ class DuelCRUD:
         await session.commit()
 
     @staticmethod
-    async def get_pending_confirmation(session: AsyncSession, chat_id: int, opponent_id: int) -> Optional[Duel]:
+    async def get_pending_confirmation(
+            session: AsyncSession,
+            chat_telegram_id: int,
+            opponent_telegram_id: int
+    ) -> Optional[Duel]:
         result = await session.execute(
-            select(Duel).where(
-                Duel.chat_id == chat_id,
-                Duel.opponent_id == opponent_id,
-                Duel.status == DuelStatus.WAITING_FOR_CONFIRMATION
-            )
+            select(Duel)
+            .join(Duel.chat)
+            .join(Duel.opponent)
+            .where(Chat.telegram_chat_id == chat_telegram_id)
+            .where(User.telegram_id == opponent_telegram_id)
+            .where(Duel.status == DuelStatus.WAITING_FOR_CONFIRMATION)
         )
         return result.scalar_one_or_none()

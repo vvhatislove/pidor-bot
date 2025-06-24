@@ -13,7 +13,7 @@ class Chat(Base):
     __tablename__ = "chats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    chat_id: Mapped[int] = mapped_column(
+    telegram_chat_id: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
         unique=True,
@@ -37,6 +37,7 @@ class Chat(Base):
         uselist=False,
         cascade="all, delete-orphan"
     )
+    duels: Mapped[list["Duel"]] = relationship(back_populates="chat", cascade="all, delete-orphan")
 
 
 class User(Base):
@@ -107,7 +108,6 @@ class Cooldown(Base):
 
 class DuelStatus(str, Enum):
     WAITING_FOR_CONFIRMATION = "waiting_confirmation"
-    PENDING = "pending"      # Идёт приём ставок
     ACTIVE = "active"        # Дуэль в процессе
     FINISHED = "finished"    # Дуэль завершена
     CANCELLED = "cancelled"  # Отменена (например, нет ставок)
@@ -134,8 +134,8 @@ class Duel(Base):
     )
     start_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        nullable=False,
-        doc="Время начала дуэли (после ставок)"
+        nullable=True,
+        doc="Время начала дуэли"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -149,19 +149,21 @@ class Duel(Base):
     initiator_win_chance: Mapped[Optional[float]] = mapped_column(
         Float,
         nullable=True,
-        doc="Шанс победы инициатора (фиксируется при старте дуэли)"
+        doc="Шанс победы инициатора (фиксируется при старте дуэли)",
+        default=0.5
     )
     opponent_win_chance: Mapped[Optional[float]] = mapped_column(
         Float,
         nullable=True,
-        doc="Шанс победы оппонента (1 - initiator)"
+        doc="Шанс победы оппонента (1 - initiator)",
+        default=0.5
     )
 
     # Optional: связи
-    initiator: Mapped["User"] = relationship(foreign_keys=[initiator_id])
-    opponent: Mapped["User"] = relationship(foreign_keys=[opponent_id])
-    winner: Mapped[Optional["User"]] = relationship(foreign_keys=[winner_id])
-    chat: Mapped["Chat"] = relationship()
+    initiator: Mapped["User"] = relationship(foreign_keys=[initiator_id], lazy="selectin")
+    opponent: Mapped["User"] = relationship(foreign_keys=[opponent_id], lazy="selectin")
+    winner: Mapped[Optional["User"]] = relationship(foreign_keys=[winner_id], lazy="selectin")
+    chat: Mapped["Chat"] = relationship(back_populates="duels")
     bets: Mapped[list["Bet"]] = relationship(
         back_populates="duel",
         cascade="all, delete-orphan"
