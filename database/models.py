@@ -164,34 +164,34 @@ class Duel(Base):
     opponent: Mapped["User"] = relationship(foreign_keys=[opponent_id], lazy="selectin")
     winner: Mapped[Optional["User"]] = relationship(foreign_keys=[winner_id], lazy="selectin")
     chat: Mapped["Chat"] = relationship(back_populates="duels")
-    bets: Mapped[list["Bet"]] = relationship(
-        back_populates="duel",
-        cascade="all, delete-orphan"
-    )
+    # bets: Mapped[list["Bet"]] = relationship(
+    #     back_populates="duel",
+    #     cascade="all, delete-orphan"
+    # )
 
 
-class BetTarget(str, Enum):
-    INITIATOR = "initiator"
-    OPPONENT = "opponent"
-
-class Bet(Base):
-    """Ставка пользователя на дуэль"""
-    __tablename__ = "bets"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    duel_id: Mapped[int] = mapped_column(ForeignKey("duels.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-
-    amount: Mapped[float] = mapped_column(Float, nullable=False, doc="Сумма ставки")
-    target: Mapped[BetTarget] = mapped_column(SQLEnum(BetTarget), nullable=False, doc="На кого сделана ставка")
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
-    )
-
-    # Связи
-    duel: Mapped["Duel"] = relationship(back_populates="bets")
-    user: Mapped["User"] = relationship()
+# class BetTarget(str, Enum):
+#     INITIATOR = "initiator"
+#     OPPONENT = "opponent"
+#
+# class Bet(Base):
+#     """Ставка пользователя на дуэль"""
+#     __tablename__ = "bets"
+#
+#     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+#     duel_id: Mapped[int] = mapped_column(ForeignKey("duels.id", ondelete="CASCADE"), nullable=False)
+#     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+#
+#     amount: Mapped[float] = mapped_column(Float, nullable=False, doc="Сумма ставки")
+#     target: Mapped[BetTarget] = mapped_column(SQLEnum(BetTarget), nullable=False, doc="На кого сделана ставка")
+#
+#     created_at: Mapped[datetime] = mapped_column(
+#         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
+#     )
+#
+#     # Связи
+#     duel: Mapped["Duel"] = relationship(back_populates="bets")
+#     user: Mapped["User"] = relationship()
 
 
 class Skill(Base):

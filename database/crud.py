@@ -352,3 +352,43 @@ class DuelCRUD:
             .where(Duel.status == DuelStatus.WAITING_FOR_CONFIRMATION)
         )
         return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_pending_or_active_duel_by_chat(
+            session: AsyncSession,
+            chat_telegram_id: int
+    ) -> Optional[Duel]:
+        result = await session.execute(
+            select(Duel)
+            .join(Duel.chat)
+            .where(Chat.telegram_chat_id == chat_telegram_id)
+            .where(Duel.status.in_([
+                DuelStatus.ACTIVE,
+                DuelStatus.WAITING_FOR_CONFIRMATION
+            ]))
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def cancel_duel_with_refund(session: AsyncSession, duel: Duel) -> None:
+        if duel.status == DuelStatus.FINISHED or duel.status == DuelStatus.CANCELLED:
+            return  # Нельзя отменить завершённую или уже отменённую дуэль
+
+        duel.status = DuelStatus.CANCELLED
+
+        if duel.status == DuelStatus.WAITING_FOR_CONFIRMATION:
+            duel.initiator.balance += duel.amount
+            await CurrencyTransactionCRUD.create_transaction(
+                session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
+            )
+        elif duel.status == DuelStatus.ACTIVE:
+            duel.initiator.balance += duel.amount
+            duel.opponent.balance += duel.amount
+            await CurrencyTransactionCRUD.create_transaction(
+                session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
+            )
+            await CurrencyTransactionCRUD.create_transaction(
+                session, duel.opponent.id, duel.amount, "refund opponent bet(duel was cancelled)"
+            )
+
+        await session.commit()

@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher
 from config.config import config
 from database import init_db
 from middlewares.db_middleware import DbSessionMiddleware
-from handlers import common, admin, game, registration, triggers
+from handlers import common, admin, game, registration, triggers, duel
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -25,7 +25,9 @@ async def main():
         # admin.router,
         game.router,
         registration.router,
-        triggers.router
+        duel.router,
+        triggers.router,
+
     ]:
         dp.include_router(router)
     logger.info("Routers registered")
