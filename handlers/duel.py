@@ -1,11 +1,11 @@
 import asyncio
-from random import choice
 import re
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timedelta, UTC
+from random import choice
 
 from aiogram import Router
-from aiogram.filters import Command
 from aiogram.types import Message
+from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import AIPromt, CommandText
@@ -17,6 +17,7 @@ from services.duel_logic import wait_for_acceptance
 
 router = Router()
 logger = setup_logger(__name__)
+
 
 @router.message(Command("duel"))
 async def cmd_duel(message: Message, session: AsyncSession):
@@ -40,7 +41,7 @@ async def cmd_duel(message: Message, session: AsyncSession):
     if username_opponent == message.from_user.username:
         await message.answer("🤡 Нельзя драться самому с собой, шизик.")
         return
-    
+
     initiator = await UserCRUD.get_user_by_username(session, message.from_user.username, message.chat.id)
     if not initiator:
         await message.answer("🚫 Вы не зарегистрированы в чате.")
@@ -50,7 +51,7 @@ async def cmd_duel(message: Message, session: AsyncSession):
     if not opponent:
         await message.answer(f"👤 Пользователь @{username_opponent} не зарегистрирован.")
         return
-    print(initiator.balance)
+
     if initiator.balance < amount:
         await message.answer("❌ У вас недостаточно PidorCoins.")
         return
@@ -64,7 +65,7 @@ async def cmd_duel(message: Message, session: AsyncSession):
         created_at = duel.created_at.replace(tzinfo=UTC) if duel.created_at.tzinfo is None else duel.created_at
         if datetime.now(UTC) - created_at > timedelta(minutes=10):
             await DuelCRUD.cancel_duel_with_refund(session, duel)
-            logger.info(f"Cancelled duel {duel.id} in chat {duel.chat_id} due to timeout")
+            logger.info(f"Old duel {duel.id} in chat {duel.chat_id} was cancelled due to timeout")
         else:
             await message.answer("⚔️ Уже идёт дуэль или кто-то вызван. Подожди завершения.")
             return
@@ -73,6 +74,8 @@ async def cmd_duel(message: Message, session: AsyncSession):
     initiator.balance -= amount
     duel = await DuelCRUD.create_duel(session, chat.id, initiator.id, opponent.id, amount)
     await CurrencyTransactionCRUD.create_transaction(session, initiator.id, amount, "duel initiator bet")
+    logger.info(
+        f"{message.from_user.username} initiated a duel with {username_opponent} for {amount} coins in chat {message.chat.id}")
     await session.commit()
 
     await message.answer(
@@ -96,45 +99,45 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
         duel.status = DuelStatus.CANCELLED
         await session.commit()
         await message.answer("💸 У вас недостаточно монет для принятия дуэли. Дуэль отменена.")
+        logger.info(f"Duel {duel.id} cancelled due to opponent ({message.from_user.username}) lacking funds")
         return
 
-    # Снимаем ставку с оппонента
     duel.opponent.balance -= duel.amount
     duel.status = DuelStatus.FINISHED
     duel.accepted_at = datetime.now(UTC)
 
-    # Выбираем победителя
     initiator = duel.initiator
     opponent = duel.opponent
     winner = choice([initiator, opponent])
     duel.winner_id = winner.id
 
-    # Выплата: сумма двух ставок минус комиссия
     commission = 0.05
     payout = round(duel.amount * 2 * (1 - commission), 2)
     winner.balance += payout
 
-    # Записываем транзакции
     await CurrencyTransactionCRUD.create_transaction(session, duel.opponent.id, duel.amount, "duel opponent bet")
     await CurrencyTransactionCRUD.create_transaction(session, winner.id, payout, "duel winner payout")
     await session.commit()
 
-    # Сообщение в чат
     winner_name = winner.username
     loser_name = initiator.username if winner == opponent else opponent.username
-    
-    await message.bot.send_message(message.chat.id,"🔍Поиск победителя...")
+
+    logger.info(
+        f"Duel {duel.id} accepted by {message.from_user.username} — Winner: {winner_name}, Loser: {loser_name}, Payout: {payout}")
+
+    await message.bot.send_message(message.chat.id, "🔍Поиск победителя...")
     duel_fight_message = await AIService.get_response("", AIPromt.DUEL_WINNER_CHOICE_PROMT)
-    await asyncio.sleep(2)  # Имитация задержки для эффекта
+    await asyncio.sleep(2)
     await message.bot.send_message(message.chat.id, duel_fight_message.format(winner=winner_name, loser=loser_name))
     await message.answer(
         f"⚔️ Дуэль завершена!\n"
         f"🏆 Победил: <b>@{winner_name}</b>\n"
         f"☠️ Проиграл: @{loser_name}\n"
-        f"💰 Выплата: {payout} PidorCoins (комиссия {int(commission*100)}%)",
+        f"💰 Выплата: {payout} PidorCoins (комиссия {int(commission * 100)}%)",
         parse_mode="HTML"
     )
-    
+
+
 @router.message(Command("cancel_duel"))
 async def cmd_cancel_duel(message: Message, session: AsyncSession):
     if message.chat.type == "private":
@@ -148,6 +151,8 @@ async def cmd_cancel_duel(message: Message, session: AsyncSession):
 
     await DuelCRUD.cancel_duel_with_refund(session, duel)
     await session.commit()
+
+    logger.info(f"{message.from_user.username} cancelled duel {duel.id} in chat {message.chat.id}")
 
     opponent_username = duel.opponent.username if duel.opponent else "неизвестный"
     await message.answer(
