@@ -25,7 +25,11 @@ class Chat(Base):
         nullable=False,
         doc="Название чата"
     )
-
+    auto_pidor: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default="false",
+        doc="Автоматический выбор пидора дня")
     # Связи
     users: Mapped[list["User"]] = relationship(
         back_populates="chat",

@@ -9,4 +9,3 @@ __pycache__/
 *$py.class
 /alembic/README
 /alembic/script.py.mako
-/alembic.ini

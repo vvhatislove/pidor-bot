@@ -304,7 +304,6 @@ class DuelCRUD:
                 selectinload(Duel.initiator),
                 selectinload(Duel.opponent),
                 selectinload(Duel.chat),
-                selectinload(Duel.bets)
             )
             .where(Duel.id == duel_id)
         )

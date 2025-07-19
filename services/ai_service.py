@@ -27,7 +27,7 @@ class AIService:
             "Origin not allowed",
             "Error"
         ]
-
+        
         logger.info(f"Sending request to AI provider (model: {model})")
         logger.debug(f"Prompt: {ai_prompt}")
         logger.debug(f"User content: {content}")
