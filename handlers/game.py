@@ -142,3 +142,18 @@ async def cmd_test(message: Message, session: AsyncSession):
     bot = message.bot
     data = await bot.send_dice(message.chat.id, emoji='🎰')
     await bot.send_message(message.chat.id, f'значение слоты {get_combo_text(data.dice.value)}')
+
+@router.message(Command("balance"))
+async def balance_handler(message: Message, session: AsyncSession):
+    if message.chat.type == "private":
+        logger.info("Rejected /balance: private chat")
+        await message.answer(CommandText.WRONG_CHAT)
+        return
+
+
+    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
+    if user is None:
+        await message.reply("Вы ещё не зарегистрированы в этом чате.")
+        return
+
+    await message.reply(f"💰 Ваш баланс: {user.balance:.2f} 🪙PidorCoins.")
