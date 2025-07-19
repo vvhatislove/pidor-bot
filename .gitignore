@@ -2,6 +2,7 @@ config.env
 /database/storage/database.db
 .env
 /venv
+/.venv
 /.idea
 /bot.log
 __pycache__/
