@@ -1,5 +1,5 @@
 config.env
-/database/storage/database.db
+/database/storage/
 .env
 /venv
 /.venv
