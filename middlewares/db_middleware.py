@@ -13,7 +13,12 @@ class DbSessionMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any]
     ) -> Any:
-        logger.info(f"Opening database session for event: {event}")
+        short_event = f"{type(event).__name__}"
+        if hasattr(event, "from_user"):
+            short_event += f" from {event.from_user.id}"
+        elif hasattr(event, "message") and hasattr(event.message, "from_user"):
+            short_event += f" from {event.message.from_user.id}"
+        logger.info(f"DB session opened for event: {short_event}")
         async with async_session() as session:
             data["session"] = session
             result = await handler(event, data)

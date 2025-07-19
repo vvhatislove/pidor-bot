@@ -372,15 +372,15 @@ class DuelCRUD:
     async def cancel_duel_with_refund(session: AsyncSession, duel: Duel) -> None:
         if duel.status == DuelStatus.FINISHED or duel.status == DuelStatus.CANCELLED:
             return  # Нельзя отменить завершённую или уже отменённую дуэль
-
+        current_status = duel.status
         duel.status = DuelStatus.CANCELLED
 
-        if duel.status == DuelStatus.WAITING_FOR_CONFIRMATION:
-            duel.initiator.balance += duel.amount
-            await CurrencyTransactionCRUD.create_transaction(
-                session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
-            )
-        elif duel.status == DuelStatus.ACTIVE:
+        # if current_status == DuelStatus.WAITING_FOR_CONFIRMATION:
+        #     duel.initiator.balance += duel.amount
+        #     await CurrencyTransactionCRUD.create_transaction(
+        #         session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
+        #     )
+        if current_status == DuelStatus.WAITING_FOR_CONFIRMATION:
             duel.initiator.balance += duel.amount
             duel.opponent.balance += duel.amount
             await CurrencyTransactionCRUD.create_transaction(

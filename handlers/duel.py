@@ -72,8 +72,10 @@ async def cmd_duel(message: Message, session: AsyncSession):
 
     chat = await ChatCRUD.get_chat(session, message.chat.id)
     initiator.balance -= amount
+    opponent.balance -= amount
     duel = await DuelCRUD.create_duel(session, chat.id, initiator.id, opponent.id, amount)
     await CurrencyTransactionCRUD.create_transaction(session, initiator.id, amount, "duel initiator bet")
+    await CurrencyTransactionCRUD.create_transaction(session, opponent.id, amount, "duel opponent bet")
     logger.info(
         f"{message.from_user.username} initiated a duel with {username_opponent} for {amount} coins in chat {message.chat.id}")
     await session.commit()
