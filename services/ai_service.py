@@ -1,13 +1,13 @@
 import asyncio
+from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
 
-import g4f
-from g4f.Provider import provider
 from config.config import config
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-g4f.Provider.OpenRouter.api_key = config.OPENROUTER_API_KEY
+client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)  # 👈 Новый способ
 
 class AIService:
 
@@ -20,46 +20,42 @@ class AIService:
             retry_delay: float = 1.0
     ) -> str:
         errors = [
-            "Rate limit exceeded",
-            "CAPTCHA",
-            "Model is not supported",
-            "Service Unavailable",
-            "Origin not allowed",
-            "Error"
+            "rate limit", "quota", "timeout",
+            "unavailable", "context_length", "502"
         ]
-        
-        logger.info(f"Sending request to AI provider (model: {model})")
+
+        logger.info(f"Sending request to OpenAI (model: {model})")
         logger.debug(f"Prompt: {ai_prompt}")
         logger.debug(f"User content: {content}")
 
         for attempt in range(1, max_retries + 1):
             try:
-                response = await g4f.ChatCompletion.create_async(
+                messages: list[ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam] = [
+                    ChatCompletionSystemMessageParam(role="system", content=ai_prompt),
+                    ChatCompletionUserMessageParam(role="user", content=content)]
+                response = await client.chat.completions.create(
                     model=model,
-                    messages=[
-                        {"role": "system", "content": ai_prompt},
-                        {"role": "user", "content": content}
-                    ],
-                    web_search=False,
+                    messages=messages
                 )
 
-                if not response or not response.strip():
+                reply = response.choices[0].message.content.strip()
+
+                if not reply:
                     logger.warning(f"Empty response received (attempt {attempt})")
                     continue
 
-                for error in errors:
-                    if error.lower() in response.lower():
-                        logger.warning(f"AI provider returned error: {error} (attempt {attempt})")
-                        raise ValueError(f"AI error: {error}")
+                if any(err in reply.lower() for err in errors):
+                    logger.warning(f"OpenAI response contained error: {reply} (attempt {attempt})")
+                    raise ValueError("API returned error content")
 
-                logger.info("Received valid response from AI provider")
-                logger.debug(f"AI response: {response}")
-                return response.strip()
+                logger.info("Received valid response from OpenAI")
+                logger.debug(f"AI response: {reply}")
+                return reply
 
             except Exception as e:
                 logger.error(f"Attempt {attempt} failed: {str(e)}")
                 if attempt < max_retries:
-                    await asyncio.sleep(retry_delay * attempt)  # Экспоненциальная задержка
+                    await asyncio.sleep(retry_delay * attempt)
 
         logger.error(f"All {max_retries} attempts failed")
         return ""
