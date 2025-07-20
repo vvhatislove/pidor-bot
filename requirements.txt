@@ -3,6 +3,6 @@ pydantic
 aiogram
 requests
 SQLAlchemy
-g4f
 aiosqlite
 alembic
+openai
