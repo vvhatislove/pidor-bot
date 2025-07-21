@@ -42,7 +42,6 @@ async def cmd_slots(message: Message, session: AsyncSession):
     if bet > user.balance:
         await message.answer("❌ У вас недостаточно 🪙PidorCoins.")
         return
-    balance_before = user.balance
     user.balance -= bet
     await session.commit()
     msg = await message.answer_dice(emoji=DiceEmoji.SLOT_MACHINE)
@@ -55,11 +54,12 @@ async def cmd_slots(message: Message, session: AsyncSession):
         "seven": "7️⃣"
     }
     slots_display = " | ".join(emojis.get(s, s) for s in slots)
-    commission_percent: float = 1.0
+    commission_percent: float = 2.0
+    gross_win = bet * multiplier
     reaction_msg = ""
     match multiplier:
         case 0:
-            reaction_msg = "Ноль иксов? Братанчик, даже пидорасов будут уважать больше чем тебя!СРОЧНО ДОДЕП!! 😂💔"
+            reaction_msg = "Ноль иксов? Братанчик, даже пидорасов будут уважать больше чем тебя! СРОЧНО ДОДЕП!! 😂💔"
         case 2:
             reaction_msg = "Два икса? Два пидораса таки и делают друг друга пидорасами! 😂👬"
         case 5:
@@ -69,21 +69,18 @@ async def cmd_slots(message: Message, session: AsyncSession):
         case 20:
             reaction_msg = "Двадцать иксов? Ты уже на уровне олимпийского пидора, медаль за разорванный пердак точно заслужил! 🏅🌟"
         case 50:
-            reaction_msg = await AIService.get_response("", ai_prompt=AIPromt.JACKPOT_REACT_PROMPT)
-
-    gross_win = bet * multiplier
+            reaction_msg = await AIService.get_response("", ai_prompt=AIPromt.JACKPOT_REACT_PROMPT.format(gross_win))
     commission = round(gross_win * commission_percent / 100, 2)
     net_win = round(gross_win - commission, 2)
-    final_balance = round(balance_before - bet + net_win, 2)
     if gross_win != 0:
-        user.balance += gross_win
+        user.balance += net_win + bet
         await session.commit()
     await message.answer(
         f"🎰 Результат: {slots_display}\n\n"
         f"💰 Ставка: {bet}\n"
         f"🎯 Выигрыш: {gross_win} (x{multiplier})\n"
         f"💸 Комиссия {commission_percent}%: -{commission}\n"
-        f"🧾 Итог: +{net_win} 🪙PidorCoins\n\n"
-        f"📦 Баланс: {final_balance}"
+        f"🧾 Итог: +{net_win}\n\n"
+        f"📦 Баланс: {user.balance} 🪙PidorCoins"
         f"\n\n{reaction_msg}"
     )
