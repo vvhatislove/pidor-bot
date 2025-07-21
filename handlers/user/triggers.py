@@ -41,7 +41,7 @@ async def trigger_handler(message: Message):
             if trigger in text:
                 trigger_message = await AIService.get_response(text, AIPromt.PIDOR_TRIGGERS_PROMT)
                 if trigger_message:
-                    logger.info("Sended trigger answer")
+                    logger.info("Sent trigger answer")
                     await message.reply(trigger_message)
                 break
 

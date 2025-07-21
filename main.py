@@ -1,10 +1,12 @@
 import asyncio
+
 from aiogram import Bot, Dispatcher
+
 from config.config import config
 from database import init_db
-from middlewares.db_middleware import DbSessionMiddleware
-from handlers import common, admin, game, registration, triggers, duel
+from handlers.user import duel, common, update_data, registration, triggers, pidor, stats, achievements, balance
 from logger import setup_logger
+from middlewares.db_middleware import DbSessionMiddleware
 
 logger = setup_logger(__name__)
 
@@ -16,23 +18,25 @@ async def main():
     bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()
 
-    # Подключаем middleware
     dp.update.middleware(DbSessionMiddleware())
 
-    # Регистрируем роутеры
     for router in [
         common.router,
-        # admin.router,
-        game.router,
         registration.router,
         duel.router,
-        triggers.router,
+        update_data.router,
+        pidor.router,
+        stats.router,
+        achievements.router,
+        balance.router,
 
+        triggers.router,  # Ensure triggers.router is last
     ]:
         dp.include_router(router)
     logger.info("Routers registered")
     await dp.start_polling(bot)
     logger.info("Bot stopped")
+
 
 if __name__ == "__main__":
     try:
