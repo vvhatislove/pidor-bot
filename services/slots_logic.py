@@ -1,18 +1,38 @@
-def get_combo_text(dice_value: int):
+def get_slots_and_multiplier(dice_value: int) -> tuple[list[str], float]:
     """
-    Возвращает то, что было на конкретном дайсе-казино
-    :param dice_value: значение дайса (число)
-    :return: массив строк, содержащий все выпавшие элементы в виде текста
+    Возвращает кортеж из:
+    - списка символов слотов (['bar', 'grape', 'lemon'])
+    - множителя выигрыша (float)
 
-    Альтернативный вариант (ещё раз спасибо t.me/svinerus):
-        return [casino[(dice_value - 1) // i % 4]for i in (1, 4, 16)]
+    :param dice_value: значение дайса от Telegram (1–64)
+    :return: (symbols, multiplier)
     """
-    #           0       1         2        3
     values = ["bar", "grape", "lemon", "seven"]
 
+    # Декодируем dice_value → список символов
     dice_value -= 1
-    result = []
+    slots = []
     for _ in range(3):
-        result.append(values[dice_value % 4])
+        slots.append(values[dice_value % 4])
         dice_value //= 4
-    return result
+
+    # Вычисляем множитель
+    s1, s2, s3 = slots
+    if s1 == s2 == s3:
+        match s1:
+            case "seven":
+                return slots, 50
+            case "bar":
+                return slots, 20
+            case "grape":
+                return slots, 10
+            case "lemon":
+                return slots, 5
+
+    if slots.count("seven") == 2:
+        return slots, 5
+
+    if len(set(slots)) == 2:
+        return slots, 2
+
+    return slots, 0

@@ -4,8 +4,8 @@ from datetime import datetime, timedelta, UTC
 from random import choice
 
 from aiogram import Router
-from aiogram.types import Message
 from aiogram.filters import Command
+from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import AIPromt, CommandText
@@ -31,10 +31,10 @@ async def cmd_duel(message: Message, session: AsyncSession):
         await message.answer("❌ Неверный формат.\nИспользуй: <code>/duel @username 100</code>", parse_mode="HTML")
         return
 
-    username_opponent, amount_str = match.groups()
-    amount = float(amount_str.replace(",", "."))
+    username_opponent, bet_str = match.groups()
+    bet = float(bet_str.replace(",", "."))
 
-    if not (0 < amount <= 1000):
+    if not (0 < bet <= 1000):
         await message.answer("💰 Сумма должна быть от 1 до 1000 PidorCoins.")
         return
 
@@ -52,11 +52,11 @@ async def cmd_duel(message: Message, session: AsyncSession):
         await message.answer(f"👤 Пользователь @{username_opponent} не зарегистрирован.")
         return
 
-    if initiator.balance < amount:
+    if initiator.balance < bet:
         await message.answer("❌ У вас недостаточно PidorCoins.")
         return
 
-    if opponent.balance < amount:
+    if opponent.balance < bet:
         await message.answer(f"❌ У пользователя @{username_opponent} недостаточно средств.")
         return
 
@@ -71,17 +71,17 @@ async def cmd_duel(message: Message, session: AsyncSession):
             return
 
     chat = await ChatCRUD.get_chat(session, message.chat.id)
-    initiator.balance -= amount
-    opponent.balance -= amount
-    duel = await DuelCRUD.create_duel(session, chat.id, initiator.id, opponent.id, amount)
-    await CurrencyTransactionCRUD.create_transaction(session, initiator.id, amount, "duel initiator bet")
-    await CurrencyTransactionCRUD.create_transaction(session, opponent.id, amount, "duel opponent bet")
+    initiator.balance -= bet
+    opponent.balance -= bet
+    duel = await DuelCRUD.create_duel(session, chat.id, initiator.id, opponent.id, bet)
+    await CurrencyTransactionCRUD.create_transaction(session, initiator.id, bet, "duel initiator bet")
+    await CurrencyTransactionCRUD.create_transaction(session, opponent.id, bet, "duel opponent bet")
     logger.info(
-        f"{message.from_user.username} initiated a duel with {username_opponent} for {amount} coins in chat {message.chat.id}")
+        f"{message.from_user.username} initiated a duel with {username_opponent} for {bet} coins in chat {message.chat.id}")
     await session.commit()
 
     await message.answer(
-        f"⚔️ @{message.from_user.username} по-пидорски вызвал @{username_opponent} на дуэль на сумму {amount} 🪙 PidorCoins!\n\n/accept_duel - принять дуэль\n/cancel_duel - отклонить дуэль"
+        f"⚔️ @{message.from_user.username} по-пидорски вызвал @{username_opponent} на дуэль на сумму {bet} 🪙 PidorCoins!\n\n/accept_duel - принять дуэль\n/cancel_duel - отклонить дуэль"
     )
     asyncio.create_task(wait_for_acceptance(message.bot, session, duel.id, message.chat.id))
 
