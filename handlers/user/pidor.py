@@ -1,16 +1,17 @@
 import asyncio
+import random
+
 from aiogram import Router
-from aiogram.types import Message
 from aiogram.filters import Command
+from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from config.constants import GameText, CommandText, AIPromt, Cooldown
 from database.crud import UserCRUD, CurrencyTransactionCRUD
 from handlers.utils import get_display_name
+from logger import setup_logger
 from services.ai_service import AIService
 from services.cooldown import CooldownService
-from config.constants import GameText, CommandText, AIPromt, Cooldown
-import random
-from logger import setup_logger
-
 
 router = Router()
 logger = setup_logger(__name__)
@@ -39,12 +40,12 @@ async def cmd_pidor(message: Message, session: AsyncSession):
     logger.info(f"Starting pidor selection among {len(users)} users")
     await message.answer("Так так так... Погодите-ка...🔍")
 
-    search_phrases = await AIService.get_response("", AIPromt.SERCHING_PIDOR_PROMT)
+    search_phrases = await AIService.get_response("", AIPromt.SERCHING_PIDOR_PROMPT)
     search_phrases = search_phrases.split("|")
     if not len(search_phrases):
         search_phrases.extend(random.sample(GameText.SEARCH_PHRASES, min(2, len(GameText.SEARCH_PHRASES))))
         search_phrases = list(set(search_phrases))[:2]
-    win_phrase = await AIService.get_response("", AIPromt.WIN_PHRASE_PIDOR_PROMT)
+    win_phrase = await AIService.get_response("", AIPromt.WIN_PHRASE_PIDOR_PROMPT)
     if not win_phrase:
         win_phrase = random.choice(GameText.WIN_PHRASES)
 
@@ -67,7 +68,7 @@ async def cmd_pidor(message: Message, session: AsyncSession):
     logger.info(f"Updated pidor count for user {pidor.telegram_id}: {pidor.pidor_count}")
     logger.info(f"Increased balance for user {pidor.telegram_id}: {pidor_coins}")
 
-    await CooldownService.activate_cooldown(session, message.chat.id, Cooldown.DEFAULT) # Cooldown.DEFAULT
+    await CooldownService.activate_cooldown(session, message.chat.id, Cooldown.DEFAULT)  # Cooldown.DEFAULT
     logger.info(f"Cooldown activated for chat {message.chat.id}")
 
     await message.answer(win_phrase + f"\n\n\n+🪙{pidor_coins} PidorCoins нашему пидорасику")

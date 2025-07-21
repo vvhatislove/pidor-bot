@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.types import Message
 
 from config.constants import CommandText, GameText, AIPromt
@@ -8,10 +8,8 @@ from logger import setup_logger
 from services.ai_service import AIService
 
 logger = setup_logger(__name__)
-
-
-
 router = Router()
+
 
 @router.message()
 async def trigger_handler(message: Message):
@@ -39,10 +37,8 @@ async def trigger_handler(message: Message):
         logger.info("TRIGGER: %s", text)
         for trigger in GameText.TRIGGERS:
             if trigger in text:
-                trigger_message = await AIService.get_response(text, AIPromt.PIDOR_TRIGGERS_PROMT)
+                trigger_message = await AIService.get_response(text, AIPromt.PIDOR_TRIGGERS_PROMPT)
                 if trigger_message:
                     logger.info("Sent trigger answer")
                     await message.reply(trigger_message)
                 break
-
-

@@ -128,7 +128,7 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
         f"Duel {duel.id} accepted by {message.from_user.username} — Winner: {winner_name}, Loser: {loser_name}, Payout: {payout}")
 
     await message.bot.send_message(message.chat.id, "🔍Поиск победителя...")
-    duel_fight_message = await AIService.get_response("", AIPromt.DUEL_WINNER_CHOICE_PROMT)
+    duel_fight_message = await AIService.get_response("", AIPromt.DUEL_WINNER_CHOICE_PROMPT)
     await asyncio.sleep(2)
     await message.bot.send_message(message.chat.id, duel_fight_message.format(winner=winner_name, loser=loser_name))
     await message.answer(
