@@ -1,15 +1,13 @@
+from datetime import datetime, timedelta, UTC, timezone
 from typing import Any, Sequence, Optional
 
 from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import datetime, timedelta, UTC, timezone
-
-from sqlalchemy.orm import Mapped, selectinload
+from sqlalchemy.orm import selectinload
 
 from config.config import config
-from .models import User, Cooldown, Chat, CurrencyTransaction, Duel, DuelStatus
-
 from logger import setup_logger
+from .models import User, Cooldown, Chat, CurrencyTransaction, Duel, DuelStatus
 
 logger = setup_logger(__name__)
 
@@ -36,6 +34,7 @@ class UserCRUD:
         )
         await session.execute(stmt)
         await session.commit()
+
     @staticmethod
     async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int, chat_telegram_id: int) -> User | None:
         logger.debug(f"Attempting to get user {telegram_id} from chat {chat_telegram_id}")
@@ -248,9 +247,18 @@ class ChatCRUD:
         logger.info(f"Successfully created chat {chat_telegram_id}")
         return chat
 
+    @staticmethod
+    async def get_all_chats(session: AsyncSession) -> list[Chat]:
+        result = await session.execute(select(Chat))
+        chats = result.scalars().all()
+        logger.info(f"Found {len(chats)} chats in total")
+        return chats
+
+
 class CurrencyTransactionCRUD:
     @staticmethod
-    async def create_transaction(session: AsyncSession, user_id: int, amount: float, reason: str) -> CurrencyTransaction:
+    async def create_transaction(session: AsyncSession, user_id: int, amount: float,
+                                 reason: str) -> CurrencyTransaction:
         if amount <= 0:
             raise ValueError(f"Невозможно создать транзакцию с amount={amount}. Значение должно быть > 0.")
 
@@ -275,15 +283,16 @@ class CurrencyTransactionCRUD:
         result = await session.execute(stmt)
         return result.scalars().all()
 
+
 class DuelCRUD:
 
     @staticmethod
     async def create_duel(
-        session: AsyncSession,
-        chat_id: int ,
-        initiator_id: int,
-        opponent_id:  int,
-        amount: float
+            session: AsyncSession,
+            chat_id: int,
+            initiator_id: int,
+            opponent_id: int,
+            amount: float
     ) -> Duel:
         duel = Duel(
             chat_id=chat_id,

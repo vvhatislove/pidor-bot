@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from aiogram import Router
 from aiogram.types import Message
 
-from config.constants import CommandText, GameText, AIPromt
+from config.constants import GameText, AIPromt
 from logger import setup_logger
 from services.ai_service import AIService
 
@@ -14,7 +14,6 @@ router = Router()
 @router.message()
 async def trigger_handler(message: Message):
     if message.chat.type == "private":
-        await message.answer(CommandText.WRONG_CHAT)
         return
     message_ttl_seconds = 60
     # Проверка на "устаревшее" сообщение

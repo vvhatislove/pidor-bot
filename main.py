@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher
 
 from config.config import config
 from database import init_db
+from handlers.admin import distribution
 from handlers.user import (duel, common, update_data, registration,
                            triggers, pidor, stats, achievements,
                            balance, slots)
@@ -23,6 +24,7 @@ async def main():
     dp.update.middleware(DbSessionMiddleware())
 
     for router in [
+        # user
         common.router,
         registration.router,
         duel.router,
@@ -32,6 +34,8 @@ async def main():
         achievements.router,
         balance.router,
         slots.router,
+        # admin
+        distribution.router,
 
         triggers.router,  # Ensure triggers.router is last
     ]:
