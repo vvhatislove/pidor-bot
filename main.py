@@ -7,7 +7,7 @@ from database import init_db
 from handlers.admin import distribution
 from handlers.user import (duel, common, update_data, registration,
                            triggers, pidor, stats, achievements,
-                           balance, slots)
+                           balance, slots, profile)
 from logger import setup_logger
 from middlewares.db_middleware import DbSessionMiddleware
 
@@ -34,6 +34,7 @@ async def main():
         achievements.router,
         balance.router,
         slots.router,
+        profile.router,
         # admin
         distribution.router,
 

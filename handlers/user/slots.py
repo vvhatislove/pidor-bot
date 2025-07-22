@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import AIPromt
 from config.constants import CommandText
-from database.crud import UserCRUD
+from database.crud import UserCRUD, CurrencyTransactionCRUD
 from logger import setup_logger
 from services.ai_service import AIService
 from services.slots_logic import get_slots_and_multiplier
@@ -43,6 +43,7 @@ async def cmd_slots(message: Message, session: AsyncSession):
         await message.answer("❌ У вас недостаточно 🪙PidorCoins.")
         return
     user.balance -= bet
+    await CurrencyTransactionCRUD.create_transaction(session, user.id, bet, "slots bet")
     await session.commit()
     msg = await message.answer_dice(emoji=DiceEmoji.SLOT_MACHINE)
     slots, multiplier = get_slots_and_multiplier(msg.dice.value)
@@ -69,11 +70,13 @@ async def cmd_slots(message: Message, session: AsyncSession):
         case 20:
             reaction_msg = "Двадцать иксов? Ты уже на уровне олимпийского пидора, медаль за разорванный пердак точно заслужил! 🏅🌟"
         case 50:
-            reaction_msg = await AIService.get_response("", ai_prompt=AIPromt.JACKPOT_REACT_PROMPT.format(gross_win))
+            reaction_msg = await AIService.get_response("", ai_prompt=AIPromt.JACKPOT_REACT_PROMPT.format(
+                gross_win=gross_win))
     commission = round(gross_win * commission_percent / 100, 2)
     net_win = round(gross_win - commission, 2)
     if gross_win != 0:
-        user.balance += net_win + bet
+        user.balance += net_win
+        await CurrencyTransactionCRUD.create_transaction(session, user.id, net_win, "slots win")
         await session.commit()
     await message.answer(
         f"🎰 Результат: {slots_display}\n\n"
