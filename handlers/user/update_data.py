@@ -1,18 +1,20 @@
 from aiogram import Router
-from aiogram.types import Message
 from aiogram.filters import Command
-from database.crud import UserCRUD
+from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from config.constants import CommandText
+from database.crud import UserCRUD
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
 router = Router()
 
-@router.message(Command("updatedata"))
-async def cmd_updatedata(message: Message, session: AsyncSession):
-    logger.info(f"/updatedata called by user {message.from_user.id} in chat {message.chat.id}")
+
+@router.message(Command("update_data"))
+async def cmd_update_data(message: Message, session: AsyncSession):
+    logger.info(f"/update_data called by user {message.from_user.id} in chat {message.chat.id}")
 
     if message.chat.type == "private":
         await message.answer(CommandText.WRONG_CHAT)

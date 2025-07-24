@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from pydantic import ValidationError
 from pydantic_settings import BaseSettings
-from pathlib import Path
+
 from logger import setup_logger
 
 logger = setup_logger(__name__)
+
 
 class Settings(BaseSettings):
     BOT_TOKEN: str
@@ -11,6 +14,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     BOT_NAME: str
     OPENAI_API_KEY: str
+    TIMEZONE: str
 
     class Config:
         env_file = Path(__file__).parent.parent / '.env'

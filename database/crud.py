@@ -248,11 +248,17 @@ class ChatCRUD:
         return chat
 
     @staticmethod
-    async def get_all_chats(session: AsyncSession) -> list[Chat]:
+    async def get_all_chats(session: AsyncSession) -> Sequence[Chat]:
         result = await session.execute(select(Chat))
         chats = result.scalars().all()
         logger.info(f"Found {len(chats)} chats in total")
         return chats
+
+    @staticmethod
+    async def get_auto_pidor_chats(session: AsyncSession) -> list[Chat]:
+        result = await session.execute(select(Chat))
+        all_chats = result.scalars().all()
+        return [c for c in all_chats if c.auto_pidor is True]
 
 
 class CurrencyTransactionCRUD:

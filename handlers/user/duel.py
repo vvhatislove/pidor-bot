@@ -13,7 +13,7 @@ from database.crud import UserCRUD, DuelCRUD, ChatCRUD, CurrencyTransactionCRUD
 from database.models import DuelStatus
 from logger import setup_logger
 from services.ai_service import AIService
-from services.duel_logic import wait_for_acceptance
+from services.duel_service import wait_for_acceptance
 
 router = Router()
 logger = setup_logger(__name__)

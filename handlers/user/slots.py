@@ -10,9 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.constants import AIPromt
 from config.constants import CommandText
 from database.crud import UserCRUD, CurrencyTransactionCRUD
+from handlers.utils.slots_logic import get_slots_and_multiplier
 from logger import setup_logger
 from services.ai_service import AIService
-from services.slots_logic import get_slots_and_multiplier
 
 logger = setup_logger(__name__)
 
