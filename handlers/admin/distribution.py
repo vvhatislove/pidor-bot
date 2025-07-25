@@ -13,7 +13,7 @@ logger = setup_logger(__name__)
 router = Router()
 
 
-@router.message(Command("sendglobalmessage"))
+@router.message(Command("send_global_message"))
 async def cmd_send_global_message(message: Message, session: AsyncSession):
     if message.chat.type != "private":
         logger.info("Update data rejected: not private chat")

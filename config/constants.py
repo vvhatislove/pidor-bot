@@ -38,7 +38,7 @@ class Commands:
     ]
 
     ADMIN = [
-        ("sendglobalmessage <текст>", "Глобальное сообщение")
+        ("send_global_message <текст>", "Глобальное сообщение")
     ]
 
 
