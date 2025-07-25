@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.enums import ParseMode
 from aiogram.types import Message
 from aiogram.filters import Command
 
@@ -41,3 +42,12 @@ async def help_start(message: Message):
         for command, description in Commands.PUBLIC_GROUP:
             help_message += f"/{command}{bot_name} - {description}\n"
     await message.answer(help_message)
+
+@router.message(Command("test"))
+async def cmd_test(message: Message):
+    logger.info(f"/test requested by user {message.from_user.id} in chat {message.chat.id}")
+    if message.chat.type == "private":
+        logger.info("Rejected /stats: private chat")
+        await message.answer(CommandText.WRONG_CHAT)
+        return
+    await message.answer(f'<a href="tg://user?id={message.from_user.id}">{message.from_user.first_name}</a>', parse_mode=ParseMode.HTML)

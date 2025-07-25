@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import GameText, CommandText
 from database.CRUD.user_crud import UserCRUD
+from handlers.utils.utils import get_display_name
 from logger import setup_logger
 
 router = Router()
@@ -26,7 +27,7 @@ async def cmd_achievements(message: Message, session: AsyncSession):
         await message.answer("Вы не зарегистрированы в чате")
         return
 
-    achievement_lines = ["🎖 Достижения:\n"]
+    achievement_lines = [f"🎖 Достижения {get_display_name(user)}:\n"]
     for threshold, (title, description) in sorted(GameText.ACHIEVEMENTS.items()):
         achieved = user.pidor_count >= threshold
         status = "✅ Получено" if achieved else "🔒 Не получено"

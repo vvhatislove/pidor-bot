@@ -16,8 +16,9 @@ def get_slots_and_multiplier(dice_value: int) -> tuple[list[str], float]:
         slots.append(values[dice_value % 4])
         dice_value //= 4
 
-    # Вычисляем множитель
     s1, s2, s3 = slots
+
+    # 3 подряд одинаковых
     if s1 == s2 == s3:
         match s1:
             case "seven":
@@ -29,10 +30,9 @@ def get_slots_and_multiplier(dice_value: int) -> tuple[list[str], float]:
             case "lemon":
                 return slots, 5
 
-    if slots.count("seven") == 2:
-        return slots, 5
+    # 2 подряд одинаковых (s1 == s2 или s2 == s3)
+    if s1 == s2 or s2 == s3:
+        return slots, 1.5
 
-    if len(set(slots)) == 2:
-        return slots, 2
-
+    # Иначе — ничего
     return slots, 0

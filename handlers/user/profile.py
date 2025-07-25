@@ -1,4 +1,5 @@
 from aiogram import Router
+from aiogram.enums import ParseMode
 from aiogram.filters import Command
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +8,7 @@ from config.constants import CommandText
 from database.CRUD.duel_crud import DuelCRUD
 from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
 from database.CRUD.user_crud import UserCRUD
+from handlers.utils.utils import get_display_name
 
 router = Router()
 
@@ -36,7 +38,7 @@ async def cmd_profile(message: Message, session: AsyncSession):
     reg_date = user.registration_date.strftime('%d.%m.%Y')
 
     await message.answer(
-        f"<b>👤 Профиль @{user.username or user.first_name}</b>\n"
+        f"<b>👤 Профиль {get_display_name(user)}</b>\n"
         f"🆔 ID: <code>{user.telegram_id}</code>\n"
         f"📆 Зарегистрирован: {reg_date}\n"
         f"💰 Баланс: <b>{user.balance:.2f}</b> PidorCoins\n"
@@ -52,5 +54,5 @@ async def cmd_profile(message: Message, session: AsyncSession):
         f"📈 Чистый профит: {slot_profit:+.2f} 🪙\n",
 
         # f"<b>🧠 Навыки:</b>\n{skills_text}",
-        parse_mode="HTML"
+        parse_mode=ParseMode.HTML
     )

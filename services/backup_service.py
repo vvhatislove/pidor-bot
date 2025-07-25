@@ -60,7 +60,7 @@ def create_backup_zip(
 async def backup_scheduler(bot: Bot):
     logger.info("Backup scheduler started")
     while True:
-        await wait_until(14, 33)
+        await wait_until(2, 0)
         logger.info("Time to run backup")
         backup_path = create_backup_zip()
         await send_backup_to_telegram(bot, backup_path)

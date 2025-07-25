@@ -37,12 +37,12 @@ async def register_user(message: Message, session: AsyncSession):
         )
         logger.info(f"Chat {message.chat.id} created")
 
-    new_user = await UserCRUD.create_user(
+    await UserCRUD.create_user(
         session=session,
         telegram_id=message.from_user.id,
         chat_telegram_id=chat.telegram_chat_id,
         first_name=message.from_user.first_name,
-        username=message.from_user.username
+        username=message.from_user.username if message.from_user.username else ""
     )
     logger.info(f"User {message.from_user.id} registered successfully")
     await message.answer("Вы успешно зарегистрировались 🌈")

@@ -28,7 +28,7 @@ async def run_pidor_for_all(bot: Bot, session: AsyncSession):
             logger.info(f"Launching auto-pidor in chat {chat.telegram_chat_id}")
             await run_pidor_selection(
                 chat_id=chat.telegram_chat_id,
-                send_func=lambda text: bot.send_message(chat.telegram_chat_id, text),
+                send_func=bot.send_message,
                 session=session,
                 is_automatic=True
             )
