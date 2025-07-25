@@ -29,29 +29,29 @@ TIMEZONE=Europe/Kyiv # или другой часовой пояс
 
 # 1. Клонируем репозиторий
 ```bash
- git clone https://github.com/yourusername/pidorbot.git
-cd pidorbot
+git clone https://github.com/vvhatislove/pidor-bot
+cd pidor-bot
 ````
 
 # 2. Создаём и активируем виртуальное окружение
 ```bash
- python -m venv venv
+python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 ```
 
 # 3. Устанавливаем зависимости
 ```bash
- pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 # 4. Применяем миграции
 ```bash
- alembic upgrade head
+alembic upgrade head
 ```
 
 # 5. Запускаем бота
 ```bash
- python main.py
+python main.py
 ```
 
 ## ⚙️ Установка и запуск через Docker
@@ -59,11 +59,11 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 1. Собираем образ
 ```bash
- docker build -t pidorbot 
+docker build -t pidorbot 
 ```
 # 2. Запускаем контейнер
 ```bash
- docker compose up -d
+docker compose up -d
 ```
 
 ## 💬 Команды бота
@@ -96,13 +96,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 Создание новой миграции:
 
 ```bash
- alembic revision --autogenerate -m "описание изменений"
+alembic revision --autogenerate -m "описание изменений"
 ```
 
 Применение:
 
 ```bash
- alembic upgrade head
+alembic upgrade head
 ```
 
 ## 🛠 Зависимости
