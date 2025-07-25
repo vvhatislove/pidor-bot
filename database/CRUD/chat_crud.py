@@ -42,7 +42,7 @@ class ChatCRUD:
         return chats
 
     @staticmethod
-    async def get_auto_pidor_chats(session: AsyncSession) -> list[Chat]:
-        result = await session.execute(select(Chat))
+    async def get_auto_pidor_chats(session: AsyncSession) -> Sequence[Chat]:
+        result = await session.execute(select(Chat).where(Chat.auto_pidor.is_(True)))
         all_chats = result.scalars().all()
-        return [c for c in all_chats if c.auto_pidor is True]
+        return all_chats
