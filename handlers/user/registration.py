@@ -1,7 +1,8 @@
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command
-from database.crud import UserCRUD, ChatCRUD
+from database.CRUD.chat_crud import ChatCRUD
+from database.CRUD.user_crud import UserCRUD
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.constants import CommandText
 from logger import setup_logger

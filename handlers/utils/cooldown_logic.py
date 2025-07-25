@@ -4,13 +4,15 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.config import config
-from database.crud import CooldownCRUD
+from database.CRUD.cooldown_crud import CooldownCRUD
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
-class CooldownService:
+
+
+class Cooldown:
     async def check_cooldown(session: AsyncSession, chat_id: int) -> bool:
         """
         Возвращает True, если кулдаун уже сработал сегодня (с учётом TIMEZONE).

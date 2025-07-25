@@ -4,7 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import CommandText
-from database.crud import UserCRUD
+from database.CRUD.user_crud import UserCRUD
 from logger import setup_logger
 
 logger = setup_logger(__name__)

@@ -1,7 +1,8 @@
 import asyncio
-from openai import AsyncOpenAI
+
 from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
 
+from openai import AsyncOpenAI
 from config.config import config
 from logger import setup_logger
 
@@ -9,7 +10,9 @@ logger = setup_logger(__name__)
 
 client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)  # 👈 Новый способ
 
-class AIService:
+
+
+class AI:
 
     @staticmethod
     async def get_response(

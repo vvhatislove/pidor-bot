@@ -9,10 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import AIPromt
 from config.constants import CommandText
-from database.crud import UserCRUD, CurrencyTransactionCRUD
+from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
+from database.CRUD.user_crud import UserCRUD
 from handlers.utils.slots_logic import get_slots_and_multiplier
 from logger import setup_logger
-from services.ai_service import AIService
+from handlers.utils.AI import AI
 
 logger = setup_logger(__name__)
 
@@ -70,7 +71,7 @@ async def cmd_slots(message: Message, session: AsyncSession):
         case 20:
             reaction_msg = "Двадцать иксов? Ты уже на уровне олимпийского пидора, медаль за разорванный пердак точно заслужил! 🏅🌟"
         case 50:
-            reaction_msg = await AIService.get_response("", ai_prompt=AIPromt.JACKPOT_REACT_PROMPT.format(
+            reaction_msg = await AI.get_response("", ai_prompt=AIPromt.JACKPOT_REACT_PROMPT.format(
                 gross_win=gross_win))
     commission = round(gross_win * commission_percent / 100, 2)
     net_win = round(gross_win - commission, 2)

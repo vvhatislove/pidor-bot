@@ -4,7 +4,9 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import CommandText
-from database.crud import UserCRUD, DuelCRUD, CurrencyTransactionCRUD
+from database.CRUD.duel_crud import DuelCRUD
+from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
+from database.CRUD.user_crud import UserCRUD
 
 router = Router()
 

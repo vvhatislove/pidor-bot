@@ -9,10 +9,13 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import AIPromt, CommandText
-from database.crud import UserCRUD, DuelCRUD, ChatCRUD, CurrencyTransactionCRUD
+from database.CRUD.duel_crud import DuelCRUD
+from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
+from database.CRUD.chat_crud import ChatCRUD
+from database.CRUD.user_crud import UserCRUD
 from database.models import DuelStatus
 from logger import setup_logger
-from services.ai_service import AIService
+from handlers.utils.AI import AI
 from services.duel_service import wait_for_acceptance
 
 router = Router()
@@ -126,7 +129,7 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
         f"Duel {duel.id} accepted by {message.from_user.username} — Winner: {winner_name}, Loser: {loser_name}, Payout: {payout}")
 
     await message.bot.send_message(message.chat.id, "🔍Поиск победителя...")
-    duel_fight_message = await AIService.get_response("", AIPromt.DUEL_WINNER_CHOICE_PROMPT)
+    duel_fight_message = await AI.get_response("", AIPromt.DUEL_WINNER_CHOICE_PROMPT)
     await asyncio.sleep(2)
     await message.bot.send_message(message.chat.id, duel_fight_message.format(winner=winner_name, loser=loser_name))
     await message.answer(

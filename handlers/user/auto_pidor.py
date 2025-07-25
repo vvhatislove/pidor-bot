@@ -6,7 +6,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import CommandText
-from database.crud import ChatCRUD
+from database.CRUD.chat_crud import ChatCRUD
 from logger import setup_logger
 
 router = Router()

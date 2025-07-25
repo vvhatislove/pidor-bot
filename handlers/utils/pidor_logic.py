@@ -5,11 +5,12 @@ from typing import Callable, Awaitable, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import GameText, AIPromt
-from database.crud import UserCRUD, CurrencyTransactionCRUD
+from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
+from database.CRUD.user_crud import UserCRUD
 from handlers.utils.utils import get_display_name
 from logger import setup_logger
-from services.ai_service import AIService
-from services.cooldown_service import CooldownService
+from handlers.utils.AI import AI
+from handlers.utils.cooldown_logic import Cooldown
 
 logger = setup_logger(__name__)
 
@@ -20,7 +21,7 @@ async def run_pidor_selection(
         session: AsyncSession,
         is_automatic: bool
 ):
-    if await CooldownService.check_cooldown(session, chat_id):
+    if await Cooldown.check_cooldown(session, chat_id):
         logger.info(f"Cooldown active in chat {chat_id}")
         if is_automatic:
             return
@@ -38,13 +39,13 @@ async def run_pidor_selection(
         await send_func(chat_id, "Автоматический выбор пидора дня... 🤖")
     else:
         await send_func(chat_id, "Так так так... Погодите-ка...🔍")
-    search_phrases = await AIService.get_response("", AIPromt.SERCHING_PIDOR_PROMPT)
+    search_phrases = await AI.get_response("", AIPromt.SERCHING_PIDOR_PROMPT)
     search_phrases = search_phrases.split("|")
     if not search_phrases or len(search_phrases) < 2:
         search_phrases.extend(random.sample(GameText.SEARCH_PHRASES, min(2, len(GameText.SEARCH_PHRASES))))
         search_phrases = list(set(search_phrases))[:2]
 
-    win_phrase = await AIService.get_response("", AIPromt.WIN_PHRASE_PIDOR_PROMPT)
+    win_phrase = await AI.get_response("", AIPromt.WIN_PHRASE_PIDOR_PROMPT)
     if not win_phrase:
         win_phrase = random.choice(GameText.WIN_PHRASES)
 
@@ -64,7 +65,7 @@ async def run_pidor_selection(
     await session.commit()
     logger.info(f"Awarded {reward} coins to user {pidor.telegram_id}")
 
-    await CooldownService.activate_cooldown(session, chat_id)
+    await Cooldown.activate_cooldown(session, chat_id)
     await send_func(chat_id, win_phrase + f"\n\n\n+🪙{reward} PidorCoins нашему пидорасику")
 
     if pidor.pidor_count in GameText.ACHIEVEMENTS:

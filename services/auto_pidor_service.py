@@ -2,7 +2,7 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import async_session
-from database.crud import ChatCRUD
+from database.CRUD.chat_crud import ChatCRUD
 from handlers.utils.pidor_logic import run_pidor_selection
 from logger import setup_logger
 from services.utils import wait_until
