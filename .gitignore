@@ -11,3 +11,4 @@ __pycache__/
 /alembic/README
 /alembic/script.py.mako
 /backups/
+/database/docker_storage/

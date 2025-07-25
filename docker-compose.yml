@@ -1,0 +1,10 @@
+services:
+  pidorbot:
+    build: .
+    container_name: pidorbot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./database/docker_storage:/app/database/storage  # сохраняем базу данных на хосте
+      - ./backups:/app/backups

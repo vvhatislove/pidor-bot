@@ -14,49 +14,62 @@
 - [OpenAI API](https://platform.openai.com/docs/) — генерация фраз, ответов
 - `requests` — для внешних HTTP-запросов
 
-## ⚙️ Установка и запуск
-
-```bash
-# 1. Клонируем репозиторий
-git clone https://github.com/yourusername/pidorbot.git
-cd pidorbot
-
-# 2. Создаём и активируем виртуальное окружение
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 3. Устанавливаем зависимости
-pip install -r requirements.txt
-
-# 4. Создаём .env файл и указываем переменные окружения
-cp .env.example .env
-# Редактируем .env:
-# BOT_TOKEN=...
-# ADMIN_ID=...
-# DATABASE_URL=sqlite+aiosqlite:///./pidorbot.db
-# BOT_NAME=PidorBot
-# OPENAI_API_KEY=...
-
-# 5. Применяем миграции
-alembic upgrade head
-
-# 6. Запускаем бота
-python main.py
-```
 
 ## 📋 Переменные окружения (.env)
-
 ```env
 BOT_TOKEN=ваш_токен_бота
 ADMIN_ID=telegram_id_админа
 DATABASE_URL=sqlite+aiosqlite:///./pidorbot.db
 BOT_NAME=PidorBot
 OPENAI_API_KEY=ваш_ключ_OpenAI
+TIMEZONE=Europe/Kyiv # или другой часовой пояс
+```
+
+## ⚙️ Установка и запуск
+
+# 1. Клонируем репозиторий
+```bash
+ git clone https://github.com/yourusername/pidorbot.git
+cd pidorbot
+````
+
+# 2. Создаём и активируем виртуальное окружение
+```bash
+ python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+```
+
+# 3. Устанавливаем зависимости
+```bash
+ pip install -r requirements.txt
+```
+
+# 4. Применяем миграции
+```bash
+ alembic upgrade head
+```
+
+# 5. Запускаем бота
+```bash
+ python main.py
+```
+
+## ⚙️ Установка и запуск через Docker
+
+
+# 1. Собираем образ
+```bash
+ docker build -t pidorbot 
+```
+# 2. Запускаем контейнер
+```bash
+ docker compose up -d
 ```
 
 ## 💬 Команды бота
-
-- `/pidor` - 🤡 Определить пидора дня
+Пользовательские команды:
+- `pidor` - 🤡 Определить пидора дня
+- `auto_pidor` - 🔄 Автоопределение пидора каждый день
 - `slots` - 🎰 Крутнуть пидор-казино
 - `reg` - 📝 Регистрация на игру
 - `unreg` - ❌ Отменить регистрацию
@@ -67,6 +80,9 @@ OPENAI_API_KEY=ваш_ключ_OpenAI
 - `duel` - ⚔️ Вызвать на дуэль: /duel @username сумма
 - `balance` - 💰 Узнать баланс
 - `help` - 📖 Помощь по командам
+
+Админские команды:
+- `sendglobalmessage <текст>` - Глобальное сообщение
 
 ## 🧠 Возможности
 
@@ -80,13 +96,13 @@ OPENAI_API_KEY=ваш_ключ_OpenAI
 Создание новой миграции:
 
 ```bash
-  alembic revision --autogenerate -m "описание изменений"
+ alembic revision --autogenerate -m "описание изменений"
 ```
 
 Применение:
 
 ```bash
-  alembic upgrade head
+ alembic upgrade head
 ```
 
 ## 🛠 Зависимости
@@ -95,8 +111,8 @@ OPENAI_API_KEY=ваш_ключ_OpenAI
 
 ## 📄 Лицензия
 
-GPL 3.0
+[GPL 3.0](./LICENSE)
 
 ---
 
-**Автор:** [vvhatislove]
+**Автор:** [vvhatislove](https://github.com/vvhatislove)
