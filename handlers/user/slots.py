@@ -43,7 +43,9 @@ async def cmd_slots(message: Message, session: AsyncSession):
             return
     except ValueError:
         bet = user.balance
-    is_all_in = bet_str is "allin"
+    is_all_in = bet_str == "allin"
+    if is_all_in and not bet:
+        await message.answer("❌ У вас недостаточно 🪙PidorCoins для all in")
     if bet > user.balance:
         await message.answer("❌ У вас недостаточно 🪙PidorCoins.")
         return
@@ -67,7 +69,7 @@ async def cmd_slots(message: Message, session: AsyncSession):
         case 0:
             reaction_msg = "Ноль иксов? Братанчик, даже пидорасов будут уважать больше чем тебя! СРОЧНО ДОДЕП!! 😂💔"
             if is_all_in:
-                reaction_msg = "\n\n Ебать ты лох🫵🫵🫵🫵, депнул хату и проебал ХАХАХАХ"
+                reaction_msg = "Ебать ты лох🫵🫵🫵🫵, депнул хату и проебал ХАХАХАХ"
         case 1.5:
             reaction_msg = "1.5x, ну соболезную, лучше чем хуй в жопе, правда?"
         case 2:
