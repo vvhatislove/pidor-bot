@@ -22,17 +22,17 @@ def get_slots_and_multiplier(dice_value: int) -> tuple[list[str], float]:
     if s1 == s2 == s3:
         match s1:
             case "seven":
-                return slots, 50
-            case "bar":
-                return slots, 20
-            case "grape":
                 return slots, 10
-            case "lemon":
+            case "bar":
                 return slots, 5
+            case "grape":
+                return slots, 2
+            case "lemon":
+                return slots, 1.5
 
-    # 2 подряд одинаковых (s1 == s2 или s2 == s3)
-    if s1 == s2 or s2 == s3:
-        return slots, 1.5
+    # # 2 подряд одинаковых (s1 == s2 или s2 == s3)
+    # if s1 == s2 or s2 == s3:
+    #     return slots, 1.2
 
     # Иначе — ничего
     return slots, 0

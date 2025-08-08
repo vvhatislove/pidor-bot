@@ -30,16 +30,20 @@ async def cmd_slots(message: Message, session: AsyncSession):
     if user is None:
         await message.reply("Вы ещё не зарегистрированы в этом чате. Пропишите /reg")
         return
-    pattern = r"^/slots\s+(\d+(?:[.,]\d{1,2})?)$"
+    pattern = r"^/slots\s+(allin|\d+(?:[.,]\d{1,2})?)$"
     match = re.match(pattern, message.text.strip())
     if not match:
-        await message.answer("❌ Неверный формат.\nИспользуй: <code>/slots *ставка* </code>", parse_mode="HTML")
+        await message.answer("❌ Неверный формат.\nИспользуй: <code>/slots *ставка* </code>\n\nИли <code>/slots allin </code>", parse_mode="HTML")
         return
     bet_str, = match.groups()
-    bet = float(bet_str.replace(",", "."))
-    if not (0 < bet <= 1000):
-        await message.answer("💰 Сумма должна быть от 1 до 1000 🪙PidorCoins.")
-        return
+    try:
+        bet = float(bet_str.replace(",", "."))
+        if not (0 < bet <= 5000):
+            await message.answer("💰 Сумма должна быть от 1 до 5000 🪙PidorCoins. Или вместо числа allin")
+            return
+    except ValueError:
+        bet = user.balance
+    is_all_in = bet_str is "allin"
     if bet > user.balance:
         await message.answer("❌ У вас недостаточно 🪙PidorCoins.")
         return
@@ -62,15 +66,15 @@ async def cmd_slots(message: Message, session: AsyncSession):
     match multiplier:
         case 0:
             reaction_msg = "Ноль иксов? Братанчик, даже пидорасов будут уважать больше чем тебя! СРОЧНО ДОДЕП!! 😂💔"
+            if is_all_in:
+                reaction_msg = "\n\n Ебать ты лох🫵🫵🫵🫵, депнул хату и проебал ХАХАХАХ"
+        case 1.5:
+            reaction_msg = "1.5x, ну соболезную, лучше чем хуй в жопе, правда?"
         case 2:
             reaction_msg = "Два икса? Два пидораса таки и делают друг друга пидорасами! 😂👬"
         case 5:
-            reaction_msg = "Пять иксов! Собралась пидорская пятёрка — это уже не просто пидорасы, а пидорский клан! 😂👑"
+            reaction_msg = "5 иксов? Ты не просто пидор, ты грандмастер голубизма с карамельным шлейфом! 👑😈"
         case 10:
-            reaction_msg = "Десять иксов? Ты не просто пидор, ты грандмастер голубизма с карамельным шлейфом! 👑😈"
-        case 20:
-            reaction_msg = "Двадцать иксов? Ты уже на уровне олимпийского пидора, медаль за разорванный пердак точно заслужил! 🏅🌟"
-        case 50:
             reaction_msg = await AI.get_response("", ai_prompt=AIPromt.JACKPOT_REACT_PROMPT.format(
                 gross_win=gross_win))
     commission = round(gross_win * commission_percent / 100, 2)
@@ -85,6 +89,6 @@ async def cmd_slots(message: Message, session: AsyncSession):
         f"🎯 Выигрыш: {gross_win} (x{multiplier})\n"
         f"💸 Комиссия {commission_percent}%: -{commission}\n"
         f"🧾 Итог: +{net_win}\n\n"
-        f"📦 Баланс: {user.balance} 🪙PidorCoins"
+        f"📦 Баланс: {round(user.balance, 2)} 🪙PidorCoins"
         f"\n\n{reaction_msg}"
     )
