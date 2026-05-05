@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
 from database.models import Duel, DuelStatus, Chat, User
+from database.money_format import money_2
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -24,7 +25,7 @@ class DuelCRUD:
             chat_id=chat_id,
             initiator_id=initiator_id,
             opponent_id=opponent_id,
-            amount=amount
+            amount=money_2(amount)
         )
         session.add(duel)
         await session.commit()
@@ -116,8 +117,8 @@ class DuelCRUD:
         #         session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
         #     )
         if current_status == DuelStatus.WAITING_FOR_CONFIRMATION:
-            duel.initiator.balance += duel.amount
-            duel.opponent.balance += duel.amount
+            duel.initiator.balance = money_2(duel.initiator.balance + duel.amount)
+            duel.opponent.balance = money_2(duel.opponent.balance + duel.amount)
             await CurrencyTransactionCRUD.create_transaction(
                 session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
             )

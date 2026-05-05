@@ -14,6 +14,7 @@ from database.CRUD.duel_crud import DuelCRUD
 from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
 from database.CRUD.chat_crud import ChatCRUD
 from database.CRUD.user_crud import UserCRUD
+from database.money_format import money_2
 from database.models import DuelStatus
 from handlers.utils.utils import get_display_name
 from logger import setup_logger
@@ -67,7 +68,7 @@ async def cmd_duel(message: Message, session: AsyncSession):
         )
         return
 
-    bet = float(bet_str.replace(",", "."))
+    bet = money_2(float(bet_str.replace(",", ".")))
     if not (0 < bet <= 1000):
         await message.answer("💰 Сумма должна быть от 1 до 1000 PidorCoins.")
         return
@@ -97,17 +98,17 @@ async def cmd_duel(message: Message, session: AsyncSession):
 
     # Создание дуэли
     chat = await ChatCRUD.get_chat(session, message.chat.id)
-    initiator.balance -= bet
+    initiator.balance = money_2(initiator.balance - bet)
     duel = await DuelCRUD.create_duel(session, chat.id, initiator.id, opponent_user.id, bet)
     await CurrencyTransactionCRUD.create_transaction(session, initiator.id, bet, "duel initiator bet")
     logger.info(
-        f"{initiator.telegram_id} initiated a duel with {opponent_user.telegram_id} for {bet} coins in chat {message.chat.id}"
+        f"{initiator.telegram_id} initiated a duel with {opponent_user.telegram_id} for {bet:.2f} coins in chat {message.chat.id}"
     )
     await session.commit()
 
     await message.answer(
         f"⚔️{get_display_name(initiator)} "
-        f"вызвал {opponent_display} на дуэль на сумму {bet} 🪙 PidorCoins!\n\n"
+        f"вызвал {opponent_display} на дуэль на сумму {bet:.2f} 🪙 PidorCoins!\n\n"
         "/accept_duel - принять дуэль\n"
         "/cancel_duel - отклонить дуэль",
         parse_mode=ParseMode.HTML
@@ -134,7 +135,7 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
         logger.info(f"Duel {duel.id} cancelled due to opponent ({get_display_name(duel.opponent)}) lacking funds")
         return
 
-    duel.opponent.balance -= duel.amount
+    duel.opponent.balance = money_2(duel.opponent.balance - duel.amount)
     duel.status = DuelStatus.FINISHED
     duel.accepted_at = datetime.now(UTC)
 
@@ -145,8 +146,8 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
     duel.winner_id = winner.id
 
     commission = 0.05
-    payout = round(duel.amount * 2 * (1 - commission), 2)
-    winner.balance += payout
+    payout = money_2(duel.amount * 2 * (1 - commission))
+    winner.balance = money_2(winner.balance + payout)
 
     await CurrencyTransactionCRUD.create_transaction(session, duel.opponent.id, duel.amount, "duel opponent bet")
     await CurrencyTransactionCRUD.create_transaction(session, winner.id, payout, "duel winner payout")
@@ -156,7 +157,7 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
     loser_username = initiator.username if winner == opponent else opponent.username
 
     logger.info(
-        f"Duel {duel.id} accepted by {get_display_name(duel.opponent)} — Winner: {get_display_name(winner)}, Loser: {get_display_name(loser)}, Payout: {payout}")
+        f"Duel {duel.id} accepted by {get_display_name(duel.opponent)} — Winner: {get_display_name(winner)}, Loser: {get_display_name(loser)}, Payout: {payout:.2f}")
 
     await message.bot.send_message(message.chat.id, "🔍Поиск победителя...")
     duel_fight_message = await AI.get_response("", AIPromt.DUEL_WINNER_CHOICE_PROMPT)
@@ -166,7 +167,7 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
         f"⚔️ Дуэль завершена!\n"
         f"🏆 Победил: <b>{get_display_name(winner)}</b>\n"
         f"☠️ Проиграл: {get_display_name(loser)}\n"
-        f"💰 Выплата: {payout} PidorCoins (комиссия {int(commission * 100)}%)",
+        f"💰 Выплата: {payout:.2f} PidorCoins (комиссия {int(commission * 100)}%)",
         parse_mode="HTML"
     )
 

@@ -38,7 +38,8 @@ class Commands:
     ]
 
     ADMIN = [
-        ("send_global_message <текст>", "Глобальное сообщение")
+        ("send_global_message <текст>", "Глобальное сообщение"),
+        ("addbalance @username сумма", "Начислить баланс в текущем чате (группа)"),
     ]
 
 

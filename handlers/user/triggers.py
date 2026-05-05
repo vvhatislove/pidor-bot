@@ -32,6 +32,8 @@ async def trigger_handler(message: Message):
         except Exception as e:
             logger.error(f"Error in trigger_handler: {e}")
             return
+        if text.lstrip().startswith("/"):
+            return
         text = text.lower()
         logger.info("TRIGGER: %s", text)
         for trigger in GameText.TRIGGERS:

@@ -1,7 +1,7 @@
 from datetime import datetime, UTC
 from typing import Any, Sequence
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.config import config
@@ -15,10 +15,12 @@ logger = setup_logger(__name__)
 class UserCRUD:
     @staticmethod
     async def get_user_by_username(session: AsyncSession, username: str, chat_telegram_id: int) -> User | None:
+        uname = username.lstrip("@")
         result = await session.execute(
             select(User)
             .join(Chat)
-            .where(User.username == username.lstrip("@"))
+            .where(User.username.isnot(None))
+            .where(func.lower(User.username) == uname.lower())
             .where(Chat.telegram_chat_id == chat_telegram_id)
         )
         user = result.scalar_one_or_none()

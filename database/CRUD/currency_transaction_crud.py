@@ -4,6 +4,7 @@ from typing import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database.money_format import money_2
 from database.models import CurrencyTransaction
 from logger import setup_logger
 
@@ -13,6 +14,7 @@ class CurrencyTransactionCRUD:
     @staticmethod
     async def create_transaction(session: AsyncSession, user_id: int, amount: float,
                                  reason: str) -> CurrencyTransaction:
+        amount = money_2(amount)
         if amount <= 0:
             raise ValueError(f"Невозможно создать транзакцию с amount={amount}. Значение должно быть > 0.")
 

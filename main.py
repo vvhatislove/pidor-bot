@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher
 
 from config.config import config
 from database import init_db
-from handlers.admin import distribution
+from handlers.admin import add_balance, distribution
 from handlers.user import (duel, common, update_data, registration,
                            triggers, pidor, stats, achievements,
                            balance, slots, profile, auto_pidor)
@@ -43,6 +43,7 @@ async def main():
         auto_pidor.router,
         # admin
         distribution.router,
+        add_balance.router,
 
         triggers.router,  # Ensure triggers.router is last
     ]:
