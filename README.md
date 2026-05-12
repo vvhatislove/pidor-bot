@@ -11,7 +11,7 @@
 - [SQLAlchemy](https://www.sqlalchemy.org/) + [aiosqlite](https://aiosqlite.omnilib.dev/) — асинхронная ORM и SQLite
 - [alembic](https://alembic.sqlalchemy.org/) — миграции БД
 - [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) — конфигурация через `.env`
-- [OpenAI API](https://platform.openai.com/docs/) — генерация фраз, ответов
+- [OpenAI API](https://platform.openai.com/docs/) — генерация фраз, ответов (или [OpenRouter](https://openrouter.ai/) с OpenAI-совместимым API)
 - `requests` — для внешних HTTP-запросов
 
 
@@ -21,8 +21,14 @@ BOT_TOKEN=ваш_токен_бота
 ADMIN_ID=telegram_id_админа
 DATABASE_URL=sqlite+aiosqlite:///./pidorbot.db
 BOT_NAME=PidorBot
-OPENAI_API_KEY=ваш_ключ_OpenAI
+OPENAI_API_KEY=ваш_ключ_OpenAI_или_OpenRouter
 TIMEZONE=Europe/Kyiv # или другой часовой пояс
+
+# Опционально: LLM через OpenRouter (меньше отказов на грубый юмор — см. AI_MODEL)
+# AI_PROVIDER=openrouter
+# OPENROUTER_API_KEY=sk-or-...   # если пусто, для OpenRouter используется OPENAI_API_KEY
+# AI_MODEL=mistralai/mistral-small-3.2-24b-instruct  # дефолт OpenRouter см. config/constants.LLMDefaults; дешевле: qwen/qwen-2.5-7b-instruct
+# OPENROUTER_HTTP_REFERER=https://github.com/you/pidor-bot  # опционально, для OpenRouter
 ```
 
 ## ⚙️ Установка и запуск
