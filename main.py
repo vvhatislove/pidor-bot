@@ -11,6 +11,7 @@ from handlers.user import (duel, common, update_data, registration,
                            balance, slots, profile, auto_pidor)
 from logger import setup_logger
 from middlewares.db_middleware import DbSessionMiddleware
+from services.ai_response_buffer import ai_response_buffer_worker
 from services.auto_pidor_service import auto_pidor_scheduler
 from services.backup_service import backup_scheduler
 
@@ -50,6 +51,7 @@ async def main():
         dp.include_router(router)
     asyncio.create_task(auto_pidor_scheduler(bot))
     asyncio.create_task(backup_scheduler(bot))
+    asyncio.create_task(ai_response_buffer_worker())
     logger.info("Routers registered")
     await dp.start_polling(bot)
     logger.info("Bot stopped")

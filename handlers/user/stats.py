@@ -2,7 +2,8 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.CRUD.user_crud import UserCRUD
+from database.repositories.user_repository import UserRepository
+from database.money_format import money_2
 from config.constants import CommandText
 from logger import setup_logger
 
@@ -18,7 +19,7 @@ async def cmd_stats(message: Message, session: AsyncSession):
         await message.answer(CommandText.WRONG_CHAT)
         return
 
-    users = await UserCRUD.get_chat_users(session, message.chat.id)
+    users = await UserRepository.get_chat_users(session, message.chat.id, active_only=False)
     if not users:
         logger.info(f"No users found for stats in chat {message.chat.id}")
         await message.answer("Нет зарегистрированных участников 😔")
@@ -33,7 +34,12 @@ async def cmd_stats(message: Message, session: AsyncSession):
     for i, user in enumerate(users):
         username = user.username.strip() if user.username and user.username.strip().lower() != 'none' else user.first_name.strip()
         count = user.pidor_count
+        balance = money_2(user.balance)
         medal = medals[i] if i < len(medals) else '💩'
-        stats_message_text += f"👨‍❤️‍💋‍👨 {username} — {count} раз(а) {medal}\n"
+        inactive_label = " (не участвует в розыгрыше)" if not user.is_active else ""
+        stats_message_text += (
+            f"👨‍❤️‍💋‍👨 {username}{inactive_label} — {count} раз(а) {medal}; "
+            f"баланс: {balance:.2f} 🪙\n"
+        )
 
     await message.answer(stats_message_text)

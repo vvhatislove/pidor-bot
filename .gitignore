@@ -8,6 +8,7 @@ config.env
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
 /alembic/README
 /alembic/script.py.mako
 /backups/

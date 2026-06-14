@@ -1,7 +1,7 @@
 # 🤖 PidorBot
 
-**PidorBot** — Telegram-бот, написанный на Python, использующий `aiogram`, `SQLAlchemy`, `OpenAI` и внутриигровую
-механику. Бот выбирает "пидора дня", управляет дуэлями между участниками, внутренней валютой и взаимодействует с OpenAI
+**PidorBot** — Telegram-бот, написанный на Python, использующий `aiogram`, `SQLAlchemy`, OpenRouter и внутриигровую
+механику. Бот выбирает "пидора дня", управляет дуэлями между участниками, внутренней валютой и взаимодействует с OpenRouter
 для генерации фраз и ответов.
 
 ## 📦 Стек технологий
@@ -11,7 +11,7 @@
 - [SQLAlchemy](https://www.sqlalchemy.org/) + [aiosqlite](https://aiosqlite.omnilib.dev/) — асинхронная ORM и SQLite
 - [alembic](https://alembic.sqlalchemy.org/) — миграции БД
 - [pydantic-settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/) — конфигурация через `.env`
-- [OpenAI API](https://platform.openai.com/docs/) — генерация фраз, ответов (или [OpenRouter](https://openrouter.ai/) с OpenAI-совместимым API)
+- [OpenRouter](https://openrouter.ai/) — генерация фраз и ответов через OpenAI-совместимый API
 - `requests` — для внешних HTTP-запросов
 
 
@@ -21,14 +21,19 @@ BOT_TOKEN=ваш_токен_бота
 ADMIN_ID=telegram_id_админа
 DATABASE_URL=sqlite+aiosqlite:///./pidorbot.db
 BOT_NAME=PidorBot
-OPENAI_API_KEY=ваш_ключ_OpenAI_или_OpenRouter
+OPENROUTER_API_KEY=ваш_ключ_OpenRouter
 TIMEZONE=Europe/Kyiv # или другой часовой пояс
 
-# Опционально: LLM через OpenRouter (меньше отказов на грубый юмор — см. AI_MODEL)
-# AI_PROVIDER=openrouter
-# OPENROUTER_API_KEY=sk-or-...   # если пусто, для OpenRouter используется OPENAI_API_KEY
-# AI_MODEL=mistralai/mistral-small-3.2-24b-instruct  # дефолт OpenRouter см. config/constants.LLMDefaults; дешевле: qwen/qwen-2.5-7b-instruct
+# LLM через OpenRouter
+# AI_MODEL=mistralai/mistral-small-3.2-24b-instruct  # дефолт см. config/constants.LLMDefaults; дешевле: qwen/qwen-2.5-7b-instruct
+# OPENROUTER_CHAT_MODEL=mistralai/mistral-small-3.2-24b-instruct  # legacy alias; лучше использовать AI_MODEL
 # OPENROUTER_HTTP_REFERER=https://github.com/you/pidor-bot  # опционально, для OpenRouter
+
+# Буфер готовых ответов для AI-промптов без контекста (не применяется к триггерам)
+# AI_BUFFER_TARGET_SIZE=10
+# AI_BUFFER_REFILL_INTERVAL_SECONDS=30
+# AI_BUFFER_GENERATION_CONCURRENCY=2
+# AI_BUFFER_STORAGE_PATH=database/storage/ai_response_buffer.json
 ```
 
 ## ⚙️ Установка и запуск
@@ -41,13 +46,13 @@ cd pidor-bot
 
 # 2. Создаём и активируем виртуальное окружение
 ```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python3.12 -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
 # 3. Устанавливаем зависимости
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 # 4. Применяем миграции
@@ -94,7 +99,7 @@ docker compose up -d
 
 - Интерактивные дуэли между участниками
 - Игровая валюта и система ставок
-- Генерация текстов и фраз с помощью OpenAI
+- Генерация текстов и фраз с помощью OpenRouter
 - Гибкая система команд и расширяемая архитектура
 
 ## 🧬 Миграции Alembic
@@ -113,7 +118,7 @@ alembic upgrade head
 
 ## 🛠 Зависимости
 
-Все зависимости перечислены в `requirements.txt`.
+Все зависимости перечислены в `pyproject.toml`.
 
 ## 📄 Лицензия
 

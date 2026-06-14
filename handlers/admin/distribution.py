@@ -4,8 +4,8 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.config import config
-from database.CRUD.chat_crud import ChatCRUD
-from database.CRUD.user_crud import UserCRUD
+from database.repositories.chat_repository import ChatRepository
+from database.repositories.user_repository import UserRepository
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -13,12 +13,12 @@ logger = setup_logger(__name__)
 router = Router()
 
 
-@router.message(Command("send_global_message"))
+@router.message(Command("send_global_message", "sendglobalmessage"))
 async def cmd_send_global_message(message: Message, session: AsyncSession):
     if message.chat.type != "private":
         logger.info("Update data rejected: not private chat")
         return
-    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id,
+    user = await UserRepository.get_user_by_telegram_id(session, message.from_user.id,
                                                   message.chat.id)  # не работает, пока костыльно буду получать из константы
     if not user:
         if message.from_user.id != config.ADMIN_ID:
@@ -26,13 +26,14 @@ async def cmd_send_global_message(message: Message, session: AsyncSession):
     elif not user.is_admin:
         return
 
-    text = message.text.removeprefix("/sendglobalmessage").strip()
+    parts = (message.text or "").split(maxsplit=1)
+    text = parts[1].strip() if len(parts) > 1 else ""
     if not text:
         await message.answer("❗ Укажи сообщение для рассылки.\nПример:\n<code>/sendglobalmessage Привет всем!</code>",
                              parse_mode="HTML")
         return
 
-    chats = await ChatCRUD.get_all_chats(session)
+    chats = await ChatRepository.get_all_chats(session)
     if not chats:
         await message.answer("❗ Нет чатов для рассылки.")
         return

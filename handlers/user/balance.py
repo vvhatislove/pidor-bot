@@ -4,7 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import CommandText
-from database.CRUD.user_crud import UserCRUD
+from database.repositories.user_repository import UserRepository
 from logger import setup_logger
 
 router = Router()
@@ -17,7 +17,7 @@ async def balance_handler(message: Message, session: AsyncSession):
         logger.info("Rejected /balance: private chat")
         await message.answer(CommandText.WRONG_CHAT)
         return
-    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
+    user = await UserRepository.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
     if user is None:
         await message.reply("Вы ещё не зарегистрированы в этом чате.")
         return

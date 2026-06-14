@@ -3,17 +3,17 @@ from datetime import timedelta, timezone, datetime, UTC
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.CRUD.chat_crud import ChatCRUD
-from database.models import Cooldown
+from database.repositories.chat_repository import ChatRepository
+from database.models import Cooldown, User
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class CooldownCRUD:
+class CooldownRepository:
     @staticmethod
     async def get_cooldown(session: AsyncSession, chat_telegram_id: int) -> Cooldown | None:
         logger.debug(f"Getting cooldown for chat {chat_telegram_id}")
-        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        chat = await ChatRepository.get_chat(session, chat_telegram_id)
         if not chat:
             logger.warning(f"Chat {chat_telegram_id} not found when getting cooldown")
             return None
@@ -31,7 +31,7 @@ class CooldownCRUD:
     @staticmethod
     async def check_cooldown(session: AsyncSession, chat_id: int) -> timedelta | None:
         logger.debug(f"Checking cooldown status for chat {chat_id}")
-        cooldown = await CooldownCRUD.get_cooldown(session, chat_id)
+        cooldown = await CooldownRepository.get_cooldown(session, chat_id)
         if not cooldown:
             logger.debug(f"No cooldown set for chat {chat_id}")
             return None
@@ -54,10 +54,11 @@ class CooldownCRUD:
     async def set_cooldown(
             session: AsyncSession,
             chat_telegram_id: int,
-            cooldown_seconds: int = 86400
+            cooldown_seconds: int = 86400,
+            pidor_user_id: int | None = None,
     ) -> Cooldown:
         logger.info(f"Setting cooldown for chat {chat_telegram_id} to {cooldown_seconds} seconds")
-        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        chat = await ChatRepository.get_chat(session, chat_telegram_id)
         if not chat:
             logger.error(f"Chat {chat_telegram_id} not found when setting cooldown")
             raise ValueError(f"Chat with telegram_id {chat_telegram_id} not found")
@@ -72,14 +73,25 @@ class CooldownCRUD:
             cooldown = Cooldown(
                 chat_id=chat.id,
                 cooldown_seconds=cooldown_seconds,
-                last_activated=datetime.now(UTC)
+                last_activated=datetime.now(UTC),
+                pidor_user_id=pidor_user_id,
             )
             session.add(cooldown)
         else:
             logger.debug(f"Updating existing cooldown for chat {chat_telegram_id}")
             cooldown.last_activated = datetime.now(UTC)
             cooldown.cooldown_seconds = cooldown_seconds
+            cooldown.pidor_user_id = pidor_user_id
 
         await session.commit()
         logger.info(f"Cooldown set successfully for chat {chat_telegram_id}")
         return cooldown
+
+    @staticmethod
+    async def get_cooldown_pidor_user(session: AsyncSession, chat_telegram_id: int) -> User | None:
+        cooldown = await CooldownRepository.get_cooldown(session, chat_telegram_id)
+        if not cooldown or cooldown.pidor_user_id is None:
+            return None
+
+        result = await session.execute(select(User).where(User.id == cooldown.pidor_user_id))
+        return result.scalar_one_or_none()

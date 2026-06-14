@@ -6,17 +6,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.money_format import money_2
 from database.models import CurrencyTransaction
+from database.transaction_reasons import TransactionReason, normalize_transaction_reason, transaction_display_name
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class CurrencyTransactionCRUD:
+class CurrencyTransactionRepository:
     @staticmethod
     async def create_transaction(session: AsyncSession, user_id: int, amount: float,
                                  reason: str) -> CurrencyTransaction:
         amount = money_2(amount)
         if amount <= 0:
             raise ValueError(f"Невозможно создать транзакцию с amount={amount}. Значение должно быть > 0.")
+        reason = reason.strip()
+        if not reason:
+            raise ValueError("Невозможно создать транзакцию без reason.")
 
         transaction = CurrencyTransaction(
             user_id=user_id,
@@ -25,6 +29,13 @@ class CurrencyTransactionCRUD:
             created_at=datetime.now(UTC)
         )
         session.add(transaction)
+        logger.info(
+            "currency transaction: user_id=%s amount=%.2f reason=%s display=%s",
+            user_id,
+            amount,
+            reason,
+            transaction_display_name(reason),
+        )
         return transaction
 
     @staticmethod
@@ -59,12 +70,11 @@ class CurrencyTransactionCRUD:
         total_payout = 0.0
 
         for tx in transactions:
-            reason = tx.reason.lower()
-            if "duel" in reason:
-                if "bet" in reason:
-                    total_bet += tx.amount
-                elif "payout" in reason:
-                    total_payout += tx.amount
+            reason = normalize_transaction_reason(tx.reason)
+            if reason in {TransactionReason.DUEL_INITIATOR_BET, TransactionReason.DUEL_OPPONENT_BET}:
+                total_bet += tx.amount
+            elif reason == TransactionReason.DUEL_WINNER_PAYOUT:
+                total_payout += tx.amount
 
         profit = total_payout - total_bet
         return total_bet, total_payout, profit
@@ -80,12 +90,11 @@ class CurrencyTransactionCRUD:
         total_win = 0.0
 
         for tx in transactions:
-            reason = tx.reason.lower()
-            if "slots" in reason:
-                if "bet" in reason:
-                    total_bet += tx.amount
-                elif "win" in reason:
-                    total_win += tx.amount
+            reason = normalize_transaction_reason(tx.reason)
+            if reason == TransactionReason.SLOTS_BET:
+                total_bet += tx.amount
+            elif reason == TransactionReason.SLOTS_WIN:
+                total_win += tx.amount
 
         profit = total_win - total_bet
         return total_bet, total_win, profit

@@ -25,7 +25,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('telegram_chat_id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=100), nullable=False),
-    sa.Column('auto_pidor', sa.Boolean(), server_default='false', nullable=False),
+    sa.Column('auto_pidor', sa.Boolean(), server_default=sa.false(), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_chats_telegram_chat_id'), 'chats', ['telegram_chat_id'], unique=True)
@@ -36,15 +36,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
-    op.create_table('cooldowns',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('chat_id', sa.Integer(), nullable=False),
-    sa.Column('last_activated', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('cooldown_seconds', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('chat_id')
-    )
     op.create_table('users',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('telegram_id', sa.Integer(), nullable=False),
@@ -53,6 +44,7 @@ def upgrade() -> None:
     sa.Column('username', sa.String(length=50), nullable=True),
     sa.Column('registration_date', sa.DateTime(timezone=True), nullable=False),
     sa.Column('pidor_count', sa.Integer(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default=sa.true(), nullable=False),
     sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('balance', sa.Float(), nullable=False),
     sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ondelete='CASCADE'),
@@ -61,6 +53,17 @@ def upgrade() -> None:
     op.create_index('ix_user_telegram_chat', 'users', ['telegram_id', 'chat_id'], unique=True)
     op.create_index(op.f('ix_users_chat_id'), 'users', ['chat_id'], unique=False)
     op.create_index(op.f('ix_users_telegram_id'), 'users', ['telegram_id'], unique=False)
+    op.create_table('cooldowns',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('chat_id', sa.Integer(), nullable=False),
+    sa.Column('last_activated', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('cooldown_seconds', sa.Integer(), nullable=False),
+    sa.Column('pidor_user_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['chat_id'], ['chats.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['pidor_user_id'], ['users.id'], ondelete='SET NULL'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('chat_id')
+    )
     op.create_table('currency_transactions',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),

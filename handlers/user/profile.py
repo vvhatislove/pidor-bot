@@ -5,10 +5,10 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import CommandText
-from database.CRUD.duel_crud import DuelCRUD
-from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
-from database.CRUD.user_crud import UserCRUD
-from handlers.utils.utils import get_display_name
+from database.repositories.duel_repository import DuelRepository
+from database.repositories.currency_transaction_repository import CurrencyTransactionRepository
+from database.repositories.user_repository import UserRepository
+from handlers.formatting import get_display_name
 
 router = Router()
 
@@ -19,14 +19,14 @@ async def cmd_profile(message: Message, session: AsyncSession):
         await message.answer(CommandText.WRONG_CHAT)
         return
 
-    user = await UserCRUD.get_user_by_username(session, message.from_user.username, message.chat.id)
+    user = await UserRepository.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
     if not user:
         await message.answer("🚫 Вы не зарегистрированы в этом чате.")
         return
 
-    duel_wins = await DuelCRUD.count_duel_wins(session, user.id)
-    duel_bet, duel_payout, duel_profit = await CurrencyTransactionCRUD.get_duel_stats_for_user(session, user.id)
-    slot_bet, slot_win, slot_profit = await CurrencyTransactionCRUD.get_slot_stats_for_user(session, user.id)
+    duel_wins = await DuelRepository.count_duel_wins(session, user.id)
+    duel_bet, duel_payout, duel_profit = await CurrencyTransactionRepository.get_duel_stats_for_user(session, user.id)
+    slot_bet, slot_win, slot_profit = await CurrencyTransactionRepository.get_slot_stats_for_user(session, user.id)
 
     # Список навыков
     # skills_text = "—"
@@ -36,11 +36,13 @@ async def cmd_profile(message: Message, session: AsyncSession):
     #     )
 
     reg_date = user.registration_date.strftime('%d.%m.%Y')
+    participation_status = "участвует" if user.is_active else "не участвует"
 
     await message.answer(
         f"<b>👤 Профиль {get_display_name(user)}</b>\n"
         f"🆔 ID: <code>{user.telegram_id}</code>\n"
         f"📆 Зарегистрирован: {reg_date}\n"
+        f"🎲 Розыгрыш пидора дня: <b>{participation_status}</b>\n"
         f"💰 Баланс: <b>{user.balance:.2f}</b> PidorCoins\n"
         f"🐓 Был пидором дня: <b>{user.pidor_count}</b> раз(а)\n"
         f"<b>⚔️ Дуэли:</b>\n"

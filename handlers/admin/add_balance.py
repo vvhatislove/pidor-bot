@@ -6,8 +6,9 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.config import config
-from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
-from database.CRUD.user_crud import UserCRUD
+from database.repositories.currency_transaction_repository import CurrencyTransactionRepository
+from database.repositories.user_repository import UserRepository
+from database.transaction_reasons import admin_add_balance_reason
 from database.money_format import money_2
 from logger import setup_logger
 
@@ -21,7 +22,7 @@ _MAX_ADD = 1_000_000.0
 async def _actor_is_admin(session: AsyncSession, message: Message) -> bool:
     if message.from_user.id == config.ADMIN_ID:
         return True
-    actor = await UserCRUD.get_user_by_telegram_id(
+    actor = await UserRepository.get_user_by_telegram_id(
         session, message.from_user.id, message.chat.id
     )
     return bool(actor and actor.is_admin)
@@ -64,7 +65,7 @@ async def cmd_add_balance(message: Message, session: AsyncSession):
         await message.answer(f"Сумма должна быть от 0.01 до {_MAX_ADD:.2f} 🪙.")
         return
 
-    target = await UserCRUD.get_user_by_username(session, username_raw, message.chat.id)
+    target = await UserRepository.get_user_by_username(session, username_raw, message.chat.id)
     if target is None:
         await message.answer(
             f"Пользователь @{username_raw.lstrip('@')} не найден в этом чате "
@@ -73,16 +74,18 @@ async def cmd_add_balance(message: Message, session: AsyncSession):
         return
 
     target.balance = money_2(target.balance + amount)
-    await CurrencyTransactionCRUD.create_transaction(
-        session, target.id, amount, "admin addbalance"
+    await CurrencyTransactionRepository.create_transaction(
+        session, target.id, amount, admin_add_balance_reason(message.from_user.id)
     )
     await session.commit()
     logger.info(
-        "addbalance: admin %s added %s to user %s in chat %s",
+        "addbalance: admin_telegram_id=%s target_user_id=%s target_telegram_id=%s chat_id=%s amount=%.2f new_balance=%.2f",
         message.from_user.id,
-        amount,
+        target.id,
         target.telegram_id,
         message.chat.id,
+        amount,
+        target.balance,
     )
     who = f"@{target.username}" if target.username else target.first_name
     await message.reply(

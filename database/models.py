@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 from typing import Optional
-from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Index, Float
+from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Index, Float, false
 from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
 from enum import Enum
 from sqlalchemy import Enum as SQLEnum
@@ -28,7 +28,8 @@ class Chat(Base):
     auto_pidor: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
-        server_default="false",
+        default=False,
+        server_default=false(),
         doc="Автоматический выбор пидора дня")
     # Связи
     users: Mapped[list["User"]] = relationship(
@@ -70,6 +71,12 @@ class User(Base):
         default=lambda: datetime.now(UTC)
     )
     pidor_count: Mapped[int] = mapped_column(default=0)
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+        doc="Участвует ли пользователь в розыгрыше пидора дня"
+    )
     is_admin: Mapped[bool] = mapped_column(default=False)
     balance: Mapped[float] = mapped_column(
         Float,
@@ -105,8 +112,14 @@ class Cooldown(Base):
         default=lambda: datetime.now(UTC)
     )
     cooldown_seconds: Mapped[int] = mapped_column(default=86400)
+    pidor_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        doc="Пользователь, выбранный пидором дня в текущем кулдауне"
+    )
 
     chat: Mapped["Chat"] = relationship(back_populates="cooldown")
+    pidor_user: Mapped[Optional["User"]] = relationship(foreign_keys=[pidor_user_id])
 
 
 

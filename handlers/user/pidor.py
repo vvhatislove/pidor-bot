@@ -4,7 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import CommandText
-from handlers.utils.pidor_logic import run_pidor_selection
+from services.pidor_service import run_pidor_selection
 from logger import setup_logger
 
 logger = setup_logger(__name__)

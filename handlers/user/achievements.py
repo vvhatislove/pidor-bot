@@ -4,8 +4,8 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import GameText, CommandText
-from database.CRUD.user_crud import UserCRUD
-from handlers.utils.utils import get_display_name
+from database.repositories.user_repository import UserRepository
+from handlers.formatting import get_display_name
 from logger import setup_logger
 
 router = Router()
@@ -21,7 +21,7 @@ async def cmd_achievements(message: Message, session: AsyncSession):
         await message.answer(CommandText.WRONG_CHAT)
         return
 
-    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
+    user = await UserRepository.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
     if not user:
         logger.info(f"User {message.from_user.id} not registered in chat {message.chat.id}")
         await message.answer("Вы не зарегистрированы в чате")

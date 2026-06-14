@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pidor-bot"
+version = "0.1.0"
+description = "Telegram bot with aiogram, SQLAlchemy, Alembic and OpenAI integrations."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "GPL-3.0-only" }
+dependencies = [
+    "aiogram",
+    "aiosqlite",
+    "alembic",
+    "greenlet",
+    "openai",
+    "pydantic",
+    "pydantic-settings",
+    "requests",
+    "SQLAlchemy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.setuptools]
+py-modules = ["logger", "main"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "config*",
+    "database*",
+    "handlers*",
+    "keyboards*",
+    "middlewares*",
+    "services*",
+]

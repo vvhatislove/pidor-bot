@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+
+from database.money_format import money_2
+
 """
 Однорукий бандит Telegram (🎰): dice.value 1–64, 4 символа × 3 барабана.
 
@@ -16,6 +20,56 @@ MULT_TRIPLE_LEMON = 2.0
 
 MULT_PAIR_ADJACENT = 1.45
 MULT_SANDWICH = 0.32
+SLOTS_COMMISSION_PERCENT = 2.0
+MIN_SLOTS_BET = 1.0
+MAX_SLOTS_BET = 5000.0
+
+
+@dataclass(frozen=True)
+class SlotsPayout:
+    gross_win: float
+    commission: float
+    net_win: float
+
+
+def parse_slots_bet(raw_bet: str, balance: float) -> tuple[float, bool]:
+    normalized = raw_bet.strip().lower().replace(",", ".")
+    is_all_in = normalized == "allin"
+    if is_all_in:
+        return money_2(balance), True
+
+    bet = money_2(float(normalized))
+    return bet, False
+
+
+def validate_slots_bet(bet: float, balance: float, is_all_in: bool) -> str | None:
+    normalized_balance = money_2(balance)
+    if is_all_in:
+        if normalized_balance <= 0:
+            return "❌ У вас недостаточно 🪙PidorCoins для all in"
+        if bet > normalized_balance:
+            return "❌ У вас недостаточно 🪙PidorCoins."
+        return None
+    if not (MIN_SLOTS_BET <= bet <= MAX_SLOTS_BET):
+        return f"💰 Сумма должна быть от {MIN_SLOTS_BET:.0f} до {MAX_SLOTS_BET:.0f} 🪙PidorCoins. Или вместо числа allin"
+    if bet > normalized_balance:
+        return "❌ У вас недостаточно 🪙PidorCoins."
+    return None
+
+
+def calculate_slots_payout(
+        bet: float,
+        multiplier: float,
+        commission_percent: float = SLOTS_COMMISSION_PERCENT,
+) -> SlotsPayout:
+    gross_win = money_2(bet * multiplier)
+    commission = money_2(gross_win * commission_percent / 100)
+    net_win = money_2(gross_win - commission)
+    return SlotsPayout(
+        gross_win=gross_win,
+        commission=commission,
+        net_win=net_win,
+    )
 
 
 def get_slots_and_multiplier(dice_value: int) -> tuple[list[str], float]:
@@ -27,6 +81,9 @@ def get_slots_and_multiplier(dice_value: int) -> tuple[list[str], float]:
     :param dice_value: значение дайса от Telegram (1–64)
     :return: (symbols, multiplier)
     """
+    if not 1 <= dice_value <= 64:
+        raise ValueError(f"Telegram slot dice value must be in 1..64, got {dice_value}")
+
     values = ["bar", "grape", "lemon", "seven"]
 
     dice_value -= 1

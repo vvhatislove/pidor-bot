@@ -4,14 +4,15 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from database.CRUD.currency_transaction_crud import CurrencyTransactionCRUD
+from database.repositories.currency_transaction_repository import CurrencyTransactionRepository
 from database.models import Duel, DuelStatus, Chat, User
 from database.money_format import money_2
+from database.transaction_reasons import TransactionReason
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class DuelCRUD:
+class DuelRepository:
 
     @staticmethod
     async def create_duel(
@@ -45,19 +46,6 @@ class DuelCRUD:
         )
         return result.scalar_one_or_none()
 
-    # async def get_active_duels_by_chat(self, chat_id: int) -> List[Duel]:
-    #     result = await self.session.execute(
-    #         select(Duel).where(
-    #             Duel.chat_id == chat_id,
-    #             Duel.status.in_([
-    #                 DuelStatus.WAITING_FOR_CONFIRMATION,
-    #                 DuelStatus.WAITING_FOR_BETS,
-    #                 DuelStatus.IN_PROGRESS
-    #             ])
-    #         )
-    #     )
-    #     return result.scalars().all()
-
     @staticmethod
     async def update_duel_status(session: AsyncSession, duel_id: int, status: DuelStatus) -> None:
         await session.execute(
@@ -80,6 +68,11 @@ class DuelCRUD:
     ) -> Optional[Duel]:
         result = await session.execute(
             select(Duel)
+            .options(
+                selectinload(Duel.initiator),
+                selectinload(Duel.opponent),
+                selectinload(Duel.chat),
+            )
             .join(Duel.chat)
             .join(Duel.opponent)
             .where(Chat.telegram_chat_id == chat_telegram_id)
@@ -95,6 +88,11 @@ class DuelCRUD:
     ) -> Optional[Duel]:
         result = await session.execute(
             select(Duel)
+            .options(
+                selectinload(Duel.initiator),
+                selectinload(Duel.opponent),
+                selectinload(Duel.chat),
+            )
             .join(Duel.chat)
             .where(Chat.telegram_chat_id == chat_telegram_id)
             .where(Duel.status.in_([
@@ -111,19 +109,19 @@ class DuelCRUD:
         current_status = duel.status
         duel.status = DuelStatus.CANCELLED
 
-        # if current_status == DuelStatus.WAITING_FOR_CONFIRMATION:
-        #     duel.initiator.balance += duel.amount
-        #     await CurrencyTransactionCRUD.create_transaction(
-        #         session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
-        #     )
         if current_status == DuelStatus.WAITING_FOR_CONFIRMATION:
             duel.initiator.balance = money_2(duel.initiator.balance + duel.amount)
-            duel.opponent.balance = money_2(duel.opponent.balance + duel.amount)
-            await CurrencyTransactionCRUD.create_transaction(
-                session, duel.initiator.id, duel.amount, "refund initiator bet(duel was cancelled)"
+            await CurrencyTransactionRepository.create_transaction(
+                session, duel.initiator.id, duel.amount, TransactionReason.DUEL_INITIATOR_REFUND
             )
-            await CurrencyTransactionCRUD.create_transaction(
-                session, duel.opponent.id, duel.amount, "refund opponent bet(duel was cancelled)"
+        elif current_status == DuelStatus.ACTIVE:
+            duel.initiator.balance = money_2(duel.initiator.balance + duel.amount)
+            duel.opponent.balance = money_2(duel.opponent.balance + duel.amount)
+            await CurrencyTransactionRepository.create_transaction(
+                session, duel.initiator.id, duel.amount, TransactionReason.DUEL_INITIATOR_REFUND
+            )
+            await CurrencyTransactionRepository.create_transaction(
+                session, duel.opponent.id, duel.amount, TransactionReason.DUEL_OPPONENT_REFUND
             )
 
         await session.commit()

@@ -1,18 +1,18 @@
 from datetime import datetime, UTC
-from typing import Any, Sequence
+from typing import Sequence
 
-from sqlalchemy import select, update, delete, func
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.config import config
-from database.CRUD.chat_crud import ChatCRUD
+from database.repositories.chat_repository import ChatRepository
 from database.models import User, Chat
 from logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
-class UserCRUD:
+class UserRepository:
     @staticmethod
     async def get_user_by_username(session: AsyncSession, username: str, chat_telegram_id: int) -> User | None:
         uname = username.lstrip("@")
@@ -27,15 +27,14 @@ class UserCRUD:
         return user
 
     @staticmethod
-    async def increase_balance(session: AsyncSession, telegram_id: int, amount: int):
+    async def increase_balance(session: AsyncSession, user_id: int, amount: float) -> None:
         stmt = (
             update(User)
-            .where(User.telegram_id == telegram_id)
+            .where(User.id == user_id)
             .values(balance=User.balance + amount)
             .execution_options(synchronize_session="fetch")
         )
         await session.execute(stmt)
-        await session.commit()
 
     @staticmethod
     async def get_user_by_telegram_id(session: AsyncSession, telegram_id: int, chat_telegram_id: int) -> User | None:
@@ -62,7 +61,7 @@ class UserCRUD:
             username: str | None
     ) -> User:
         logger.info(f"Creating user {telegram_id} ({first_name}) in chat {chat_telegram_id}")
-        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        chat = await ChatRepository.get_chat(session, chat_telegram_id)
         if chat is None:
             logger.error(f"Chat {chat_telegram_id} not found when creating user {telegram_id}")
             raise ValueError(f"Chat with telegram_id {chat_telegram_id} not found")
@@ -77,6 +76,7 @@ class UserCRUD:
             first_name=first_name,
             username=username,
             registration_date=datetime.now(UTC),
+            is_active=True,
             is_admin=is_admin
         )
         session.add(user)
@@ -85,24 +85,44 @@ class UserCRUD:
         return user
 
     @staticmethod
-    async def delete_user(session: AsyncSession, user: User) -> None:
-        logger.info(f"Deleting user {user.telegram_id} from chat {user.chat_id}")
-        await session.execute(delete(User).where(User.id == user.id))
+    async def deactivate_user(session: AsyncSession, user: User) -> None:
+        logger.info(f"Deactivating user {user.telegram_id} from chat {user.chat_id}")
+        user.is_active = False
         await session.commit()
-        logger.info(f"Successfully deleted user {user.telegram_id}")
+        logger.info(f"Successfully deactivated user {user.telegram_id}")
 
     @staticmethod
-    async def get_chat_users(session: AsyncSession, chat_telegram_id: int) -> list[Any] | Sequence[User]:
-        logger.debug(f"Getting all users for chat {chat_telegram_id}")
-        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+    async def activate_user(
+            session: AsyncSession,
+            user: User,
+            first_name: str,
+            username: str | None,
+    ) -> None:
+        logger.info(f"Activating user {user.telegram_id} in chat {user.chat_id}")
+        user.first_name = first_name
+        user.username = username
+        user.is_active = True
+        await session.commit()
+        logger.info(f"Successfully activated user {user.telegram_id}")
+
+    @staticmethod
+    async def get_chat_users(session: AsyncSession, chat_telegram_id: int, active_only: bool = True) -> Sequence[User]:
+        logger.debug(f"Getting users for chat {chat_telegram_id}, active_only={active_only}")
+        chat = await ChatRepository.get_chat(session, chat_telegram_id)
         if not chat:
             logger.warning(f"Chat {chat_telegram_id} not found when getting users")
             return []
 
-        result = await session.execute(
+        stmt = (
             select(User)
             .where(User.chat_id == chat.id)
-            .order_by(User.pidor_count.desc())
+        )
+        if active_only:
+            stmt = stmt.where(User.is_active.is_(True))
+        stmt = stmt.order_by(User.pidor_count.desc())
+
+        result = await session.execute(
+            stmt
         )
         users = result.scalars().all()
         logger.debug(f"Found {len(users)} users in chat {chat_telegram_id}")
@@ -127,7 +147,7 @@ class UserCRUD:
         )
         user = result.scalar_one_or_none()
 
-        chat = await ChatCRUD.get_chat(session, chat_telegram_id)
+        chat = await ChatRepository.get_chat(session, chat_telegram_id)
         if not chat:
             logger.error(f"Chat {chat_telegram_id} not found during update")
             raise ValueError(f"Chat with telegram_id {chat_telegram_id} not found")

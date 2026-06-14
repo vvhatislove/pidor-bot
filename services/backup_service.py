@@ -8,7 +8,7 @@ from aiogram.types import FSInputFile
 
 from config.config import config
 from logger import setup_logger
-from services.utils import wait_until
+from services.scheduling_service import wait_until
 
 logger = setup_logger(__name__)
 

@@ -1,8 +1,0 @@
-pydantic-settings
-pydantic
-aiogram
-requests
-SQLAlchemy
-aiosqlite
-alembic
-openai

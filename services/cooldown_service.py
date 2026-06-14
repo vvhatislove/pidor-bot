@@ -4,7 +4,8 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.config import config
-from database.CRUD.cooldown_crud import CooldownCRUD
+from database.repositories.cooldown_repository import CooldownRepository
+from database.models import User
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -12,13 +13,14 @@ logger = setup_logger(__name__)
 
 
 
-class Cooldown:
+class CooldownService:
+    @staticmethod
     async def check_cooldown(session: AsyncSession, chat_id: int) -> bool:
         """
         Возвращает True, если кулдаун уже сработал сегодня (с учётом TIMEZONE).
         """
         logger.debug(f"Checking date-based cooldown for chat {chat_id}")
-        cooldown = await CooldownCRUD.get_cooldown(session, chat_id)
+        cooldown = await CooldownRepository.get_cooldown(session, chat_id)
         if not cooldown:
             logger.debug(f"No cooldown set for chat {chat_id}")
             return False
@@ -39,8 +41,13 @@ class Cooldown:
     async def activate_cooldown(
             session: AsyncSession,
             chat_id: int,
-            cooldown_seconds: int = 86400
+            cooldown_seconds: int = 86400,
+            pidor_user_id: int | None = None,
     ) -> None:
         logger.info(f"Activating cooldown for chat_id={chat_id} with duration={cooldown_seconds} seconds")
-        await CooldownCRUD.set_cooldown(session, chat_id, cooldown_seconds)
+        await CooldownRepository.set_cooldown(session, chat_id, cooldown_seconds, pidor_user_id=pidor_user_id)
         logger.debug(f"Cooldown set for chat_id={chat_id}")
+
+    @staticmethod
+    async def get_today_pidor(session: AsyncSession, chat_id: int) -> User | None:
+        return await CooldownRepository.get_cooldown_pidor_user(session, chat_id)

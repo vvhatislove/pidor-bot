@@ -4,7 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import CommandText
-from database.CRUD.user_crud import UserCRUD
+from database.repositories.user_repository import UserRepository
 from logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -21,13 +21,13 @@ async def cmd_update_data(message: Message, session: AsyncSession):
         logger.info("Update data rejected: private chat")
         return
 
-    user = await UserCRUD.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
+    user = await UserRepository.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
     if not user:
         await message.answer("Вы не зарегистрированы в чате")
         logger.info("User not found for update")
         return
 
-    await UserCRUD.update_user_and_chat(
+    await UserRepository.update_user_and_chat(
         session,
         message.from_user.id,
         message.chat.id,
