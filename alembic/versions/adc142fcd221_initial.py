@@ -64,6 +64,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('chat_id')
     )
+    op.create_table('achievements',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('code', sa.String(length=80), nullable=False),
+    sa.Column('title', sa.String(length=100), nullable=False),
+    sa.Column('description', sa.String(length=255), nullable=False),
+    sa.Column('category', sa.String(length=50), nullable=False),
+    sa.Column('target_value', sa.Integer(), nullable=False),
+    sa.Column('reward_amount', sa.Float(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('code')
+    )
     op.create_table('currency_transactions',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -93,6 +105,18 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_duels_chat_id'), 'duels', ['chat_id'], unique=False)
+    op.create_table('user_achievements',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('achievement_id', sa.Integer(), nullable=False),
+    sa.Column('unlocked_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['achievement_id'], ['achievements.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_user_achievement_unique', 'user_achievements', ['user_id', 'achievement_id'], unique=True)
+    op.create_index(op.f('ix_user_achievements_achievement_id'), 'user_achievements', ['achievement_id'], unique=False)
+    op.create_index(op.f('ix_user_achievements_user_id'), 'user_achievements', ['user_id'], unique=False)
     op.create_table('user_skills',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -115,14 +139,19 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_user_skills_skill_id'), table_name='user_skills')
     op.drop_index('ix_user_skill_unique', table_name='user_skills')
     op.drop_table('user_skills')
+    op.drop_index(op.f('ix_user_achievements_user_id'), table_name='user_achievements')
+    op.drop_index(op.f('ix_user_achievements_achievement_id'), table_name='user_achievements')
+    op.drop_index('ix_user_achievement_unique', table_name='user_achievements')
+    op.drop_table('user_achievements')
     op.drop_index(op.f('ix_duels_chat_id'), table_name='duels')
     op.drop_table('duels')
     op.drop_table('currency_transactions')
+    op.drop_table('achievements')
+    op.drop_table('cooldowns')
     op.drop_index(op.f('ix_users_telegram_id'), table_name='users')
     op.drop_index(op.f('ix_users_chat_id'), table_name='users')
     op.drop_index('ix_user_telegram_chat', table_name='users')
     op.drop_table('users')
-    op.drop_table('cooldowns')
     op.drop_table('skills')
     op.drop_index(op.f('ix_chats_telegram_chat_id'), table_name='chats')
     op.drop_table('chats')

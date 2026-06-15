@@ -4,13 +4,14 @@ import os
 from aiogram import Bot, Dispatcher
 
 from config.config import config
-from database import init_db
+from database import async_session, init_db
 from handlers.admin import add_balance, diagnostics, distribution
 from handlers.user import (duel, common, update_data, registration,
                            triggers, pidor, stats, achievements,
                            balance, slots, profile, auto_pidor)
 from logger import setup_logger
 from middlewares.db_middleware import DbSessionMiddleware
+from services.achievement_service import AchievementService
 from services.ai_response_buffer import ai_response_buffer_worker
 from services.auto_pidor_service import auto_pidor_scheduler
 from services.backup_service import backup_scheduler
@@ -23,6 +24,9 @@ async def main():
     database_dir = "./database/storage"
     os.makedirs(database_dir, exist_ok=True)
     await init_db()
+    async with async_session() as session:
+        await AchievementService.ensure_catalog(session)
+        await session.commit()
     logger.info("Database initialized")
     bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()

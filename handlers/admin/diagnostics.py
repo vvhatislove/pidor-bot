@@ -6,9 +6,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from aiogram import Router
+from aiogram import F
 from aiogram.filters import Command
-from aiogram.types import FSInputFile, Message
-from sqlalchemy import delete, func, select, text
+from aiogram.types import CallbackQuery, FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from sqlalchemy import case, delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.config import config
@@ -35,6 +36,7 @@ logger = setup_logger(__name__)
 
 DEFAULT_LIMIT = 10
 MAX_LIMIT = 50
+CHATS_CALLBACK_PREFIX = "admin_chats"
 
 
 @dataclass(frozen=True)
@@ -75,6 +77,18 @@ def _parse_limit(value: str | None, default: int = DEFAULT_LIMIT) -> int:
         return max(1, min(int(value), MAX_LIMIT))
     except ValueError:
         return default
+
+
+def _parse_page_args(parts: list[str]) -> tuple[int, int]:
+    try:
+        page = int(parts[0]) if parts else 1
+    except ValueError:
+        page = 1
+    try:
+        per_page = int(parts[1]) if len(parts) > 1 else 10
+    except ValueError:
+        per_page = 10
+    return max(page, 1), max(1, min(per_page, MAX_LIMIT))
 
 
 async def _resolve_chat_context(message: Message, session: AsyncSession) -> ChatContext | None:
@@ -190,6 +204,91 @@ async def cmd_admin_stats(message: Message, session: AsyncSession):
         f"Баланс в системе: <b>{money_2(balance_sum or 0):.2f}</b> 🪙",
         parse_mode="HTML",
     )
+
+
+@router.message(Command("chats", ignore_case=True, ignore_mention=True))
+async def cmd_chats(message: Message, session: AsyncSession):
+    if not await _private_admin_only(message):
+        return
+
+    page, per_page = _parse_page_args(_parts(message))
+    text_value, keyboard = await _build_chats_page(session, page, per_page)
+    await message.answer(text_value, parse_mode="HTML", reply_markup=keyboard)
+
+
+@router.callback_query(F.data.startswith(f"{CHATS_CALLBACK_PREFIX}:"))
+async def cb_chats_page(callback: CallbackQuery, session: AsyncSession):
+    if callback.from_user.id != config.ADMIN_ID:
+        await callback.answer("Недостаточно прав.", show_alert=True)
+        return
+    try:
+        _, page_raw, per_page_raw = (callback.data or "").split(":", maxsplit=2)
+        page = int(page_raw)
+        per_page = int(per_page_raw)
+    except ValueError:
+        await callback.answer("Некорректная страница.", show_alert=True)
+        return
+
+    text_value, keyboard = await _build_chats_page(session, page, per_page)
+    await callback.message.edit_text(text_value, parse_mode="HTML", reply_markup=keyboard)
+    await callback.answer()
+
+
+async def _build_chats_page(session: AsyncSession, page: int, per_page: int) -> tuple[str, InlineKeyboardMarkup]:
+    total_chats = await session.scalar(select(func.count(Chat.id))) or 0
+    per_page = max(1, min(per_page, MAX_LIMIT))
+    total_pages = max((total_chats + per_page - 1) // per_page, 1)
+    page = min(page, total_pages)
+    offset = (page - 1) * per_page
+
+    result = await session.execute(
+        select(
+            Chat.id,
+            Chat.telegram_chat_id,
+            Chat.title,
+            func.count(User.id).label("users_count"),
+            func.coalesce(func.sum(User.balance), 0.0).label("balance_sum"),
+            func.coalesce(func.sum(case((User.is_active.is_(True), 1), else_=0)), 0).label("active_count"),
+        )
+        .outerjoin(User, User.chat_id == Chat.id)
+        .group_by(Chat.id)
+        .order_by(Chat.id)
+        .offset(offset)
+        .limit(per_page)
+    )
+
+    rows = [
+        f"💬 <b>Чаты</b> — страница <b>{page}/{total_pages}</b>",
+        f"Всего чатов: <b>{total_chats}</b>\n",
+    ]
+    for index, row in enumerate(result.all(), offset + 1):
+        title = escape(row.title or "без названия")
+        rows.append(
+            f"{index}. Название: <b>{title}</b>\n"
+            f"ID: <code>{row.telegram_chat_id}</code> | "
+            f"участников: <b>{row.users_count}</b> "
+            f"(активных: <b>{row.active_count}</b>) | "
+            f"{money_2(row.balance_sum):.2f} 🪙"
+        )
+
+    keyboard = _chats_keyboard(page, total_pages, per_page)
+    return "\n".join(rows), keyboard
+
+
+def _chats_keyboard(page: int, total_pages: int, per_page: int) -> InlineKeyboardMarkup:
+    prev_page = max(page - 1, 1)
+    next_page = min(page + 1, total_pages)
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(
+            text="‹",
+            callback_data=f"{CHATS_CALLBACK_PREFIX}:{prev_page}:{per_page}" if page > 1 else f"{CHATS_CALLBACK_PREFIX}:{page}:{per_page}",
+        ),
+        InlineKeyboardButton(text=f"{page}/{total_pages}", callback_data=f"{CHATS_CALLBACK_PREFIX}:{page}:{per_page}"),
+        InlineKeyboardButton(
+            text="›",
+            callback_data=f"{CHATS_CALLBACK_PREFIX}:{next_page}:{per_page}" if page < total_pages else f"{CHATS_CALLBACK_PREFIX}:{page}:{per_page}",
+        ),
+    ]])
 
 
 @router.message(Command("economy_stats", ignore_case=True, ignore_mention=True))

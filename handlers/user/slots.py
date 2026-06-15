@@ -27,6 +27,7 @@ from services.slots_service import (
     validate_slots_bet,
 )
 from logger import setup_logger
+from services.achievement_service import AchievementService
 from services.ai_service import AIService
 
 logger = setup_logger(__name__)
@@ -91,6 +92,7 @@ async def cmd_slots(message: Message, session: AsyncSession):
     if payout.gross_win != 0:
         user.balance = money_2(user.balance + payout.net_win)
         await CurrencyTransactionRepository.create_transaction(session, user.id, payout.net_win, TransactionReason.SLOTS_WIN)
+    achievements = await AchievementService.check_slots(session, user, bet, payout, is_all_in, multiplier)
     await session.commit()
     await message.answer(
         f"🎰 Результат: {slots_display}\n\n"
@@ -100,4 +102,9 @@ async def cmd_slots(message: Message, session: AsyncSession):
         f"🧾 Итог: +{payout.net_win:.2f}\n\n"
         f"📦 Баланс: {user.balance:.2f} 🪙PidorCoins"
         f"\n\n{reaction_msg}"
+    )
+    await AchievementService.notify(
+        lambda text: message.answer(text, parse_mode="HTML"),
+        user,
+        achievements,
     )

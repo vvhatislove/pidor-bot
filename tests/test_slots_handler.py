@@ -56,12 +56,17 @@ async def test_slots_handler_accepts_bot_mention_and_applies_payout(monkeypatch,
 
     await cmd_slots(message, session)
 
-    assert user.balance == 688
+    assert user.balance == 888
 
     transactions = await CurrencyTransactionRepository.get_user_transactions(session, user.id)
-    assert [tx.reason for tx in transactions] == [TransactionReason.SLOTS_BET, TransactionReason.SLOTS_WIN]
-    assert [tx.amount for tx in transactions] == [100, 588]
-    assert "Выигрыш: 600.00" in message.answers[-1]
+    assert [tx.reason for tx in transactions] == [
+        TransactionReason.SLOTS_BET,
+        TransactionReason.SLOTS_WIN,
+        "achievement_reward code=slots_first_bet",
+        "achievement_reward code=slots_first_win",
+    ]
+    assert [tx.amount for tx in transactions] == [100, 588, 50, 150]
+    assert any("Выигрыш: 600.00" in answer for answer in message.answers)
 
 
 async def test_slots_handler_does_not_charge_if_dice_send_fails(session):
@@ -86,8 +91,12 @@ async def test_slots_allin_allows_positive_balance_below_min_regular_bet(monkeyp
 
     await cmd_slots(message, session)
 
-    assert user.balance == 0
+    assert user.balance == 350
     transactions = await CurrencyTransactionRepository.get_user_transactions(session, user.id)
-    assert len(transactions) == 1
-    assert transactions[0].amount == 0.50
+    assert [tx.reason for tx in transactions] == [
+        TransactionReason.SLOTS_BET,
+        "achievement_reward code=slots_first_bet",
+        "achievement_reward code=slots_allin_loss",
+    ]
+    assert [tx.amount for tx in transactions] == [0.50, 50, 300]
     assert not any("недостаточно" in answer.lower() for answer in message.answers)

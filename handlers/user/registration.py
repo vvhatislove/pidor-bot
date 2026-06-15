@@ -6,6 +6,7 @@ from database.repositories.user_repository import UserRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.constants import CommandText
 from logger import setup_logger
+from services.achievement_service import AchievementService
 
 logger = setup_logger(__name__)
 
@@ -34,7 +35,14 @@ async def register_user(message: Message, session: AsyncSession):
             first_name=message.from_user.first_name,
             username=message.from_user.username if message.from_user.username else "",
         )
+        achievements = await AchievementService.check_registration(session, user, is_returning=True)
+        await session.commit()
         await message.answer("Вы снова участвуете в розыгрыше пидора дня 🌈")
+        await AchievementService.notify(
+            lambda text: message.answer(text, parse_mode="HTML"),
+            user,
+            achievements,
+        )
         logger.info("User reactivated")
         return
 
@@ -47,15 +55,22 @@ async def register_user(message: Message, session: AsyncSession):
         )
         logger.info(f"Chat {message.chat.id} created")
 
-    await UserRepository.create_user(
+    user = await UserRepository.create_user(
         session=session,
         telegram_id=message.from_user.id,
         chat_telegram_id=chat.telegram_chat_id,
         first_name=message.from_user.first_name,
         username=message.from_user.username if message.from_user.username else ""
     )
+    achievements = await AchievementService.check_registration(session, user, is_returning=False)
+    await session.commit()
     logger.info(f"User {message.from_user.id} registered successfully")
     await message.answer("Вы успешно зарегистрировались 🌈")
+    await AchievementService.notify(
+        lambda text: message.answer(text, parse_mode="HTML"),
+        user,
+        achievements,
+    )
 
 
 @router.message(Command("unreg"))

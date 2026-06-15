@@ -17,6 +17,7 @@ class TransactionReason:
     DUEL_WINNER_PAYOUT = "duel_winner_payout"
     DUEL_INITIATOR_REFUND = "duel_initiator_refund"
     DUEL_OPPONENT_REFUND = "duel_opponent_refund"
+    ACHIEVEMENT_REWARD = "achievement_reward"
 
 
 _LEGACY_REASON_MAP = {
@@ -41,6 +42,7 @@ _CATEGORIES = {
     TransactionReason.DUEL_WINNER_PAYOUT: TransactionCategory(False, "выплата победителю дуэли"),
     TransactionReason.DUEL_INITIATOR_REFUND: TransactionCategory(False, "возврат ставки инициатору дуэли"),
     TransactionReason.DUEL_OPPONENT_REFUND: TransactionCategory(False, "возврат ставки оппоненту дуэли"),
+    TransactionReason.ACHIEVEMENT_REWARD: TransactionCategory(False, "награда за достижение"),
 }
 
 
@@ -65,3 +67,7 @@ def is_transaction_debit(reason: str) -> bool:
 
 def admin_add_balance_reason(admin_telegram_id: int) -> str:
     return f"{TransactionReason.ADMIN_ADD_BALANCE} by={admin_telegram_id}"
+
+
+def achievement_reward_reason(code: str) -> str:
+    return f"{TransactionReason.ACHIEVEMENT_REWARD} code={code}"

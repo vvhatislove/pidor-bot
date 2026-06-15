@@ -20,6 +20,7 @@ from database.money_format import money_2
 from database.models import DuelStatus
 from handlers.formatting import get_display_name
 from logger import setup_logger
+from services.achievement_service import AchievementService
 from services.ai_service import AIService
 from services.ai_response_buffer import ai_response_buffer
 from services.duel_service import wait_for_acceptance
@@ -104,6 +105,7 @@ async def cmd_duel(message: Message, session: AsyncSession):
     initiator.balance = money_2(initiator.balance - bet)
     duel = await DuelRepository.create_duel(session, chat.id, initiator.id, opponent_user.id, bet)
     await CurrencyTransactionRepository.create_transaction(session, initiator.id, bet, TransactionReason.DUEL_INITIATOR_BET)
+    achievements = await AchievementService.check_duel_created(session, initiator)
     logger.info(
         f"{initiator.telegram_id} initiated a duel with {opponent_user.telegram_id} for {bet:.2f} coins in chat {message.chat.id}"
     )
@@ -115,6 +117,11 @@ async def cmd_duel(message: Message, session: AsyncSession):
         "/accept_duel - принять дуэль\n"
         "/cancel_duel - отклонить дуэль",
         parse_mode=ParseMode.HTML
+    )
+    await AchievementService.notify(
+        lambda text: message.answer(text, parse_mode="HTML"),
+        initiator,
+        achievements,
     )
 
     asyncio.create_task(wait_for_acceptance(message.bot, async_session, duel.id, message.chat.id))
@@ -154,6 +161,13 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
 
     await CurrencyTransactionRepository.create_transaction(session, duel.opponent.id, duel.amount, TransactionReason.DUEL_OPPONENT_BET)
     await CurrencyTransactionRepository.create_transaction(session, winner.id, payout, TransactionReason.DUEL_WINNER_PAYOUT)
+    winner_achievements, loser_achievements = await AchievementService.check_duel_finished(
+        session,
+        winner,
+        loser,
+        duel.amount,
+        payout,
+    )
     await session.commit()
 
     winner_username = winner.username
@@ -176,6 +190,16 @@ async def cmd_accept_duel(message: Message, session: AsyncSession):
         f"☠️ Проиграл: {get_display_name(loser)}\n"
         f"💰 Выплата: {payout:.2f} PidorCoins (комиссия {int(commission * 100)}%)",
         parse_mode="HTML"
+    )
+    await AchievementService.notify(
+        lambda text: message.answer(text, parse_mode="HTML"),
+        winner,
+        winner_achievements,
+    )
+    await AchievementService.notify(
+        lambda text: message.answer(text, parse_mode="HTML"),
+        loser,
+        loser_achievements,
     )
 
 

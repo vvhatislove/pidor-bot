@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 from config.config import config
 
@@ -40,6 +40,7 @@ class Commands:
     ADMIN_PRIVATE = [
         ("send_global_message <текст>", "Глобальное сообщение"),
         ("admin_stats", "Глобальная статистика бота (ЛС)"),
+        ("chats [page] [per_page]", "Список чатов с участниками и балансом (ЛС)"),
         ("economy_stats", "Сводка экономики по транзакциям (ЛС)"),
         ("ai_status", "Статус модели и AI-буфера (ЛС)"),
         ("db_status", "Статус базы данных и миграций (ЛС)"),
@@ -153,14 +154,6 @@ class GameText:
         # Исторические/литературные
         "содомит", "мужеложец", "педераст"
     ]
-
-    ACHIEVEMENTS: Dict[int, Tuple[str, str]] = {
-        1: ("🍍 Твоя первая анальная пробка", "✅Стать пидором 1 раз"),
-        3: ("🍩 Добро пожаловать в Анал-Лэнд", "✅Стать пидором 3 раза"),
-        10: ("🧘🏿 Открой в себе Gachi-чакру", "✅Стать пидором 10 раз"),
-        100: ("🔥 Путь к гейскому мастерству", "✅Стать пидором 100 раз")
-    }
-
 
 class HTTPConfig:
     """Настройки HTTP-запросов"""

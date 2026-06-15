@@ -4,6 +4,7 @@ from database.repositories.chat_repository import ChatRepository
 from database.repositories.cooldown_repository import CooldownRepository
 from database.repositories.currency_transaction_repository import CurrencyTransactionRepository
 from database.repositories.user_repository import UserRepository
+from database.transaction_reasons import TransactionReason
 from services import auto_pidor_service
 from services.ai_service import AIService
 from services.pidor_service import (
@@ -71,18 +72,21 @@ async def test_run_pidor_selection_awards_user_and_sets_cooldown(monkeypatch, se
     )
 
     assert user.pidor_count == 1
-    assert user.balance == 100
+    assert user.balance == 200
     cooldown = await CooldownRepository.get_cooldown(session, -100)
     assert cooldown is not None
     assert cooldown.pidor_user_id == user.id
 
     transactions = await CurrencyTransactionRepository.get_user_transactions(session, user.id)
-    assert len(transactions) == 1
-    assert transactions[0].amount == 100
+    assert [(tx.reason, tx.amount) for tx in transactions] == [
+        (TransactionReason.PIDOR_REWARD, 100),
+        ("achievement_reward code=pidor_1", 100),
+    ]
 
     sent_texts = [text for _, text in messages]
     assert sent_texts[:3] == ["Так так так... Погодите-ка...🔍", "search one", "search two"]
     assert "winner is @user" in sent_texts[3]
+    assert "открыл достижение" in sent_texts[4]
 
 
 async def test_run_pidor_selection_respects_same_day_cooldown(monkeypatch, session):

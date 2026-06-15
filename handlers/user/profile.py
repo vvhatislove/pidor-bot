@@ -14,6 +14,16 @@ from services.time_service import format_local_datetime
 router = Router()
 
 
+def _amount(value: float) -> str:
+    return f"{abs(value):.2f}"
+
+
+def _profit(value: float) -> str:
+    if abs(value) < 0.005:
+        return "0.00"
+    return f"{value:+.2f}"
+
+
 @router.message(Command("profile"))
 async def cmd_profile(message: Message, session: AsyncSession):
     if message.chat.type == "private":
@@ -48,13 +58,13 @@ async def cmd_profile(message: Message, session: AsyncSession):
         f"🐓 Был пидором дня: <b>{user.pidor_count}</b> раз(а)\n"
         f"<b>⚔️ Дуэли:</b>\n"
         f"🏆 Побед в дуэлях: <b>{duel_wins}</b>\n"
-        f"📤 Поставлено: -{duel_bet:.2f} 🪙\n"
-        f"📥 Выиграно (после комиссии): +{duel_payout:.2f} 🪙\n"
-        f"📈 Чистый профит: {duel_profit:+.2f} 🪙\n"
+        f"📤 Поставлено: {_amount(duel_bet)} 🪙\n"
+        f"📥 Выиграно (после комиссии): {_amount(duel_payout)} 🪙\n"
+        f"📈 Чистый профит: {_profit(duel_profit)} 🪙\n"
         f"<b>🎰 Слоты:</b>\n"
-        f"📤 Поставлено: -{slot_bet:.2f} 🪙\n"
-        f"📥 Выиграно (после комиссии): +{slot_win:.2f} 🪙\n"
-        f"📈 Чистый профит: {slot_profit:+.2f} 🪙\n",
+        f"📤 Поставлено: {_amount(slot_bet)} 🪙\n"
+        f"📥 Выиграно (после комиссии): {_amount(slot_win)} 🪙\n"
+        f"📈 Чистый профит: {_profit(slot_profit)} 🪙\n",
 
         # f"<b>🧠 Навыки:</b>\n{skills_text}",
         parse_mode=ParseMode.HTML

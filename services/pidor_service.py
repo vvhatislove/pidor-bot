@@ -10,6 +10,7 @@ from database.repositories.user_repository import UserRepository
 from database.transaction_reasons import TransactionReason
 from handlers.formatting import get_display_name
 from logger import setup_logger
+from services.achievement_service import AchievementService
 from services.ai_response_buffer import ai_response_buffer
 from services.ai_service import AIService
 from services.cooldown_service import CooldownService
@@ -94,16 +95,10 @@ async def run_pidor_selection(
     reward = PIDOR_REWARD
     await UserRepository.increase_balance(session, pidor.id, reward)
     await CurrencyTransactionRepository.create_transaction(session, pidor.id, reward, TransactionReason.PIDOR_REWARD)
+    achievements = await AchievementService.check_pidor(session, pidor)
     await session.commit()
     logger.info(f"Awarded {reward} coins to user {pidor.telegram_id}")
 
     await CooldownService.activate_cooldown(session, chat_id, pidor_user_id=pidor.id)
     await send_func(chat_id, win_phrase + f"\n\n\n+🪙{reward} PidorCoins нашему пидорасику")
-
-    if pidor.pidor_count in GameText.ACHIEVEMENTS:
-        achievement = GameText.ACHIEVEMENTS[pidor.pidor_count]
-        await send_func(chat_id,
-                        f"🎉 {pidor.first_name or pidor.username} открыл достижение:\n"
-                        f"{achievement[0]}\n{achievement[1]}"
-                        )
-        logger.info(f"User {pidor.telegram_id} unlocked achievement: {achievement[0]}")
+    await AchievementService.notify(lambda text: send_func(chat_id, text, parse_mode="HTML"), pidor, achievements)
