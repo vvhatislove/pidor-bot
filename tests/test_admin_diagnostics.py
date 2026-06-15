@@ -6,14 +6,29 @@ from database.repositories.chat_repository import ChatRepository
 from database.repositories.cooldown_repository import CooldownRepository
 from database.repositories.user_repository import UserRepository
 from handlers.admin.diagnostics import cb_chats_page, cmd_admin_stats, cmd_chat_info, cmd_chats, cmd_reset_pidor_today
+from handlers.admin.distribution import (
+    ANNOUNCE_CONFIRM_CALLBACK,
+    ANNOUNCE_EDIT_CALLBACK,
+    cmd_announce_update,
+    cb_announce_update_confirm,
+    cb_announce_update_edit,
+)
 from handlers.user.common import help_start
 
 
 class FakeMessage:
-    def __init__(self, text: str, chat_id: int = -100, chat_type: str = "group", from_user_id: int | None = None):
+    def __init__(
+        self,
+        text: str,
+        chat_id: int = -100,
+        chat_type: str = "group",
+        from_user_id: int | None = None,
+        bot=None,
+    ):
         self.text = text
         self.chat = SimpleNamespace(id=chat_id, type=chat_type, title="chat")
         self.from_user = SimpleNamespace(id=from_user_id or config.ADMIN_ID, first_name="Admin", username="admin")
+        self.bot = bot
         self.answers = []
         self.answer_kwargs = []
         self.documents = []
@@ -27,22 +42,38 @@ class FakeMessage:
 
 
 class FakeCallbackMessage:
-    def __init__(self):
+    def __init__(self, bot=None):
+        self.bot = bot
         self.edits = []
+        self.answers = []
 
     async def edit_text(self, text: str, **kwargs):
         self.edits.append((text, kwargs))
 
+    async def answer(self, text: str, **kwargs):
+        self.answers.append((text, kwargs))
+
 
 class FakeCallback:
-    def __init__(self, data: str, from_user_id: int | None = None):
+    def __init__(self, data: str, from_user_id: int | None = None, bot=None):
         self.data = data
         self.from_user = SimpleNamespace(id=from_user_id or config.ADMIN_ID)
-        self.message = FakeCallbackMessage()
+        self.message = FakeCallbackMessage(bot=bot)
         self.answers = []
 
     async def answer(self, *args, **kwargs):
         self.answers.append((args, kwargs))
+
+
+class FakeBot:
+    def __init__(self, fail_chat_ids: set[int] | None = None):
+        self.fail_chat_ids = fail_chat_ids or set()
+        self.sent_messages = []
+
+    async def send_message(self, chat_id: int, text: str, **kwargs):
+        if chat_id in self.fail_chat_ids:
+            raise RuntimeError("send failed")
+        self.sent_messages.append((chat_id, text, kwargs))
 
 
 async def test_admin_help_contains_only_group_admin_commands_in_group():
@@ -63,6 +94,7 @@ async def test_admin_help_contains_private_admin_commands_in_private():
 
     assert "/admin_stats" in message.answers[0]
     assert "/backup_now" in message.answers[0]
+    assert "/announce_update [текст]" in message.answers[0]
     assert "/chat_info chat_id" in message.answers[0]
     assert "/addbalance" not in message.answers[0]
 
@@ -73,6 +105,60 @@ async def test_regular_help_does_not_show_admin_commands():
     await help_start(message)
 
     assert "/admin_stats" not in message.answers[0]
+
+
+async def test_announce_update_private_preview_does_not_send_immediately():
+    bot = FakeBot()
+    message = FakeMessage(
+        "/announce_update Новый релиз уже в чате",
+        chat_id=config.ADMIN_ID,
+        chat_type="private",
+        bot=bot,
+    )
+
+    await cmd_announce_update(message)
+
+    assert "Превью рассылки обновления" in message.answers[0]
+    assert "Новый релиз уже в чате" in message.answers[0]
+    assert bot.sent_messages == []
+    keyboard = message.answer_kwargs[0]["reply_markup"]
+    assert keyboard.inline_keyboard[0][0].callback_data == ANNOUNCE_CONFIRM_CALLBACK
+
+
+async def test_announce_update_group_is_rejected():
+    message = FakeMessage("/announce_update")
+
+    await cmd_announce_update(message)
+
+    assert "только в ЛС" in message.answers[0]
+
+
+async def test_announce_update_edit_button_explains_custom_command():
+    callback = FakeCallback(ANNOUNCE_EDIT_CALLBACK)
+
+    await cb_announce_update_edit(callback)
+
+    assert "/announce_update текст сообщения" in callback.message.answers[0][0]
+
+
+async def test_announce_update_confirm_sends_to_chats_and_counts_failures(session):
+    await ChatRepository.create_chat(session, -100, "first")
+    await ChatRepository.create_chat(session, -200, "second")
+    bot = FakeBot(fail_chat_ids={-200})
+    message = FakeMessage(
+        "/announce_update Релиз установлен",
+        chat_id=config.ADMIN_ID,
+        chat_type="private",
+        bot=bot,
+    )
+    await cmd_announce_update(message)
+    callback = FakeCallback(ANNOUNCE_CONFIRM_CALLBACK, bot=bot)
+
+    await cb_announce_update_confirm(callback, session)
+
+    assert bot.sent_messages == [(-100, "Релиз установлен", {})]
+    assert "Успешно: 1" in callback.message.edits[0][0]
+    assert "Ошибок: 1" in callback.message.edits[0][0]
 
 
 async def test_admin_stats_private_summary(session):
