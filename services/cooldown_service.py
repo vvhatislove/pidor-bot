@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +27,10 @@ class CooldownService:
 
         tz = ZoneInfo(config.TIMEZONE)
         now_local = datetime.now(tz)
-        last_activated_local = cooldown.last_activated.astimezone(tz)
+        last_activated = cooldown.last_activated
+        if last_activated.tzinfo is None:
+            last_activated = last_activated.replace(tzinfo=UTC)
+        last_activated_local = last_activated.astimezone(tz)
 
         logger.debug(f"Last activated (local): {last_activated_local.date()}, Now: {now_local.date()}")
 

@@ -12,6 +12,12 @@ logger = setup_logger(__name__)
 router = Router()
 
 
+def _format_help_command(command: str, bot_name: str) -> str:
+    parts = command.split(maxsplit=1)
+    suffix = f" {parts[1]}" if len(parts) > 1 else ""
+    return f"/{parts[0]}{bot_name}{suffix}"
+
+
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     if message.chat.type == 'private':
@@ -28,19 +34,21 @@ async def cmd_start(message: Message):
 async def help_start(message: Message):
     logger.info(f"Help command requested by user {message.from_user.id} in chat {message.chat.id}")
     help_message = "Доступные команды: \n\n"
-    if config.ADMIN_ID == message.from_user.id and message.chat.type == 'private':
-        logger.debug(f"Admin help menu generated for user {message.from_user.id}")
-        for command, description in Commands.PUBLIC_GROUP:
-            help_message += f"/{command} - {description}\n"
+    bot_name = "" if message.chat.type == 'private' else config.BOT_NAME
+    logger.debug(f"Help menu generated for user {message.from_user.id}")
+    for command, description in Commands.PUBLIC_GROUP:
+        help_message += f"{_format_help_command(command, bot_name)} - {description}\n"
+
+    if config.ADMIN_ID == message.from_user.id:
         help_message += "\n\n"
-        help_message += "Доступные административные команды: \n\n"
-        for command, description in Commands.ADMIN:
-            help_message += f"/{command} - {description}\n"
-    else:
-        bot_name = "" if message.chat.type == 'private' else config.BOT_NAME
-        logger.debug(f"Regular help menu generated for user {message.from_user.id}")
-        for command, description in Commands.PUBLIC_GROUP:
-            help_message += f"/{command}{bot_name} - {description}\n"
+        if message.chat.type == 'private':
+            admin_commands = Commands.ADMIN_PRIVATE
+            help_message += "Административные команды в ЛС: \n\n"
+        else:
+            admin_commands = Commands.ADMIN_GROUP
+            help_message += "Административные команды в этом чате: \n\n"
+        for command, description in admin_commands:
+            help_message += f"{_format_help_command(command, bot_name)} - {description}\n"
     await message.answer(help_message)
 
 @router.message(Command("test"))

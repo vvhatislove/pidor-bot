@@ -1,6 +1,5 @@
 import os
 import time
-from datetime import datetime
 from zipfile import ZipFile
 
 from aiogram import Bot
@@ -9,6 +8,7 @@ from aiogram.types import FSInputFile
 from config.config import config
 from logger import setup_logger
 from services.scheduling_service import wait_until
+from services.time_service import local_now
 
 logger = setup_logger(__name__)
 
@@ -36,7 +36,7 @@ def create_backup_zip(
         backup_dir: str = "./backups"
 ) -> str:
     os.makedirs(backup_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = local_now().strftime("%Y-%m-%d_%H-%M-%S")
     zip_name = f"backup_{timestamp}.zip"
     zip_path = os.path.join(backup_dir, zip_name)
 

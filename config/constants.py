@@ -37,9 +37,47 @@ class Commands:
         ("help", "📖 Помощь по командам")
     ]
 
-    ADMIN = [
+    ADMIN_PRIVATE = [
         ("send_global_message <текст>", "Глобальное сообщение"),
-        ("addbalance @username сумма", "Начислить баланс в текущем чате (группа)"),
+        ("admin_stats", "Глобальная статистика бота (ЛС)"),
+        ("economy_stats", "Сводка экономики по транзакциям (ЛС)"),
+        ("ai_status", "Статус модели и AI-буфера (ЛС)"),
+        ("db_status", "Статус базы данных и миграций (ЛС)"),
+        ("health", "Проверка bot/db/env/buffer (ЛС)"),
+        ("backup_now", "Создать и отправить backup (ЛС)"),
+        ("version", "Текущий git commit и ветка (ЛС)"),
+        ("reset_pidor_today chat_id", "Сбросить сегодняшний выбор (ЛС)"),
+        ("chat_info chat_id", "Информация о чате из ЛС"),
+        ("today_pidor chat_id", "Кто сегодня выбран из ЛС"),
+        ("active_users chat_id", "Активные участники из ЛС"),
+        ("inactive_users chat_id", "Неактивные участники из ЛС"),
+        ("top_balance chat_id", "Топ баланса из ЛС"),
+        ("top_pidor chat_id", "Топ по пидору дня из ЛС"),
+        ("top_slots chat_id", "Топ по слотам из ЛС"),
+        ("top_duels chat_id", "Топ по дуэлям из ЛС"),
+        ("chat_transactions chat_id [limit]", "Последние транзакции чата из ЛС"),
+        ("user_info chat_id @username", "Информация о пользователе из ЛС"),
+        ("transactions chat_id @username [limit]", "Транзакции пользователя из ЛС"),
+    ]
+
+    ADMIN_GROUP = [
+        ("addbalance @username сумма", "Начислить баланс в текущем чате"),
+        ("chat_info", "Информация о текущем чате"),
+        ("today_pidor", "Кто сегодня выбран"),
+        ("active_users", "Активные участники розыгрыша"),
+        ("inactive_users", "Неактивные участники розыгрыша"),
+        ("top_balance", "Топ баланса"),
+        ("top_pidor", "Топ по пидору дня"),
+        ("top_slots", "Топ по слотам"),
+        ("top_duels", "Топ по дуэлям"),
+        ("chat_transactions [limit]", "Последние транзакции текущего чата"),
+        ("user_info @username", "Информация о пользователе"),
+        ("transactions @username [limit]", "Транзакции пользователя"),
+    ]
+
+    ADMIN = [
+        *ADMIN_PRIVATE,
+        *ADMIN_GROUP,
     ]
 
 

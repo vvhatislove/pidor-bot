@@ -9,6 +9,7 @@ from database.repositories.duel_repository import DuelRepository
 from database.repositories.currency_transaction_repository import CurrencyTransactionRepository
 from database.repositories.user_repository import UserRepository
 from handlers.formatting import get_display_name
+from services.time_service import format_local_datetime
 
 router = Router()
 
@@ -35,7 +36,7 @@ async def cmd_profile(message: Message, session: AsyncSession):
     #         f"• {s.skill.name} — уровень {s.level}" for s in user.user_skills
     #     )
 
-    reg_date = user.registration_date.strftime('%d.%m.%Y')
+    reg_date = format_local_datetime(user.registration_date, '%d.%m.%Y')
     participation_status = "участвует" if user.is_active else "не участвует"
 
     await message.answer(

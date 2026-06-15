@@ -33,6 +33,7 @@ async def test_stats_shows_balance_and_inactive_participation_status(session):
     assert len(message.answers) == 1
     text = message.answers[0]
     assert "active — 2 раз(а)" in text
-    assert "баланс: 123.45 🪙" in text
+    assert "| 123.45 🪙" in text
     assert "inactive (не участвует в розыгрыше) — 1 раз(а)" in text
-    assert "баланс: 50.00 🪙" in text
+    assert "| 50.00 🪙" in text
+    assert "баланс:" not in text

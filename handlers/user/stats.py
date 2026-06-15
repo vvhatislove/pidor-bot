@@ -38,8 +38,8 @@ async def cmd_stats(message: Message, session: AsyncSession):
         medal = medals[i] if i < len(medals) else '💩'
         inactive_label = " (не участвует в розыгрыше)" if not user.is_active else ""
         stats_message_text += (
-            f"👨‍❤️‍💋‍👨 {username}{inactive_label} — {count} раз(а) {medal}; "
-            f"баланс: {balance:.2f} 🪙\n"
+            f"👨‍❤️‍💋‍👨 {username}{inactive_label} — {count} раз(а) {medal} "
+            f"| {balance:.2f} 🪙\n"
         )
 
     await message.answer(stats_message_text)
