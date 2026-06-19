@@ -8,7 +8,7 @@ from database import async_session, init_db
 from handlers.admin import add_balance, diagnostics, distribution
 from handlers.user import (duel, common, update_data, registration,
                            triggers, pidor, stats, achievements,
-                           balance, slots, profile, auto_pidor)
+                           balance, slots, profile, auto_pidor, fanfic)
 from logger import setup_logger
 from middlewares.db_middleware import DbSessionMiddleware
 from services.achievement_service import AchievementService
@@ -42,6 +42,7 @@ async def main():
         pidor.router,
         stats.router,
         achievements.router,
+        fanfic.router,
         balance.router,
         slots.router,
         profile.router,

@@ -2,17 +2,20 @@ from datetime import datetime, timezone
 
 from aiogram import Router
 from aiogram.types import Message
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.constants import GameText, AIPrompt
+from database.repositories.user_repository import UserRepository
 from logger import setup_logger
 from services.ai_service import AIService
+from services.fanfic_service import FanficService
 
 logger = setup_logger(__name__)
 router = Router()
 
 
 @router.message()
-async def trigger_handler(message: Message):
+async def trigger_handler(message: Message, session: AsyncSession):
     if message.chat.type == "private":
         return
     message_ttl_seconds = 60
@@ -34,6 +37,8 @@ async def trigger_handler(message: Message):
             return
         if text.lstrip().startswith("/"):
             return
+        user = await UserRepository.get_user_by_telegram_id(session, message.from_user.id, message.chat.id)
+        await FanficService.store_user_message(session, user, text)
         text = text.lower()
         logger.info("TRIGGER: %s", text)
         for trigger in GameText.TRIGGERS:

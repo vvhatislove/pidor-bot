@@ -152,7 +152,8 @@ class AIService:
             ai_prompt: str,
             model: str | None = None,
             max_retries: int = 3,
-            retry_delay: float = 1.0
+            retry_delay: float = 1.0,
+            include_style_suffix: bool = True,
     ) -> str:
         errors = [
             "rate limit", "quota", "timeout",
@@ -171,7 +172,7 @@ class AIService:
                 messages: list[ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam] = [
                     ChatCompletionSystemMessageParam(
                         role="system",
-                        content=ai_prompt + LLMDefaults.SYSTEM_RU_STYLE_SUFFIX,
+                        content=ai_prompt + (LLMDefaults.SYSTEM_RU_STYLE_SUFFIX if include_style_suffix else ""),
                     ),
                     ChatCompletionUserMessageParam(role="user", content=content)]
                 response = await client.chat.completions.create(

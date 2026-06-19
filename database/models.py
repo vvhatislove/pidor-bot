@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 from typing import Optional
-from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Index, Float, false
+from sqlalchemy import Integer, String, Boolean, DateTime, ForeignKey, Index, Float, Text, UniqueConstraint, false
 from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
 from enum import Enum
 from sqlalchemy import Enum as SQLEnum
@@ -78,6 +78,13 @@ class User(Base):
         doc="Участвует ли пользователь в розыгрыше пидора дня"
     )
     is_admin: Mapped[bool] = mapped_column(default=False)
+    fanfic_allowed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        server_default=false(),
+        doc="Разрешил ли пользователь хранить сообщения для /fanfic в этом чате"
+    )
     balance: Mapped[float] = mapped_column(
         Float,
         default=0.0,
@@ -89,6 +96,14 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     achievements: Mapped[list["UserAchievement"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    fanfic_messages: Mapped[list["FanficMessage"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    fanfic_usages: Mapped[list["FanficUsage"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan"
     )
@@ -270,6 +285,37 @@ class UserAchievement(Base):
 
     __table_args__ = (
         Index("ix_user_achievement_unique", "user_id", "achievement_id", unique=True),
+    )
+
+
+class FanficMessage(Base):
+    __tablename__ = "fanfic_messages"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="fanfic_messages")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "content_hash", name="uq_fanfic_message_user_hash"),
+        Index("ix_fanfic_messages_user_created", "user_id", "created_at"),
+    )
+
+
+class FanficUsage(Base):
+    __tablename__ = "fanfic_usages"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="fanfic_usages")
+
+    __table_args__ = (
+        Index("ix_fanfic_usages_user_created", "user_id", "created_at"),
     )
 
 
